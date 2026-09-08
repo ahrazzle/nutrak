@@ -1,0 +1,277 @@
+{
+  "meta": {
+    "title": "Nutrak user-facing glossary — technical terms on the reviewable surface",
+    "authority": "NASEM DRI tables (verified bank/09 + life-stage grids); WHO/FAO 2004 RNI; EFSA DRV Finder feed (2026-08-29); bank/04-dietary-standards.md; bank/10-glossary.md",
+    "date": "2026-08-29",
+    "purpose": "Clickable definition source for @shayba's inline definition panel + footnote fallback, and plain-language templates for @kodekoot's provenance→words render path. Every term here appears in the demo fixture or app UI."
+  },
+  "terms": [
+    {
+      "term": "RDA",
+      "expansion": "Recommended Dietary Allowance",
+      "short": "The daily amount that covers the needs of nearly everyone (97–98%) in a life stage and sex group.",
+      "long": "A target set from the EAR: RDA = EAR + 2 standard deviations. It is deliberately higher than the average need — it covers almost all healthy people, not just the average person. Used by NASEM/Health Canada.",
+      "simple_math": "RDA ≈ EAR × 1.2 (roughly — the exact factor is 2 SD above EAR)",
+      "category": "dri"
+    },
+    {
+      "term": "EAR",
+      "expansion": "Estimated Average Requirement",
+      "short": "The amount that meets the needs of 50% of healthy people — the average need, not a target.",
+      "long": "Scientists estimate the intake that covers half the population. It is the basis for NAR (how much of your average need you're covering) and for setting the RDA. Half of people need more than this, so it is not a goal by itself.",
+      "simple_math": "Intake ÷ EAR = NAR (capped at 1.0)",
+      "category": "dri"
+    },
+    {
+      "term": "AR",
+      "expansion": "Average Requirement (EFSA)",
+      "short": "EFSA's version of the EAR — the average daily need, covers 50% of people.",
+      "long": "Used by the European Food Safety Authority. Like the EAR, it is the midpoint of need and the basis for the adequacy ratio; the PRI is set above it.",
+      "simple_math": "Intake ÷ AR = adequacy ratio (capped at 1.0)",
+      "category": "dri"
+    },
+    {
+      "term": "AI",
+      "expansion": "Adequate Intake",
+      "short": "Used when scientists can't set a precise RDA — an amount observed to be adequate, not derived from an EAR.",
+      "long": "Set when there isn't enough evidence for an EAR/RDA (e.g. potassium, sodium, biotin, vitamin D for some ages). It is a reasonable target but a softer standard — which is why its pills say 'no EAR/AR available' and use a percentage-of-reference check instead of NAR.",
+      "simple_math": "Compared as: 7-day average ÷ AI × 100",
+      "category": "dri"
+    },
+    {
+      "term": "UL",
+      "expansion": "Tolerable Upper Intake Level",
+      "short": "The highest daily intake unlikely to cause harm. Not a target — an upper bound.",
+      "long": "Consistently exceeding the UL (usually from supplements/fortified foods, not food alone) may cause adverse effects. It is used for excess warnings, never as a goal.",
+      "simple_math": "—",
+      "category": "dri"
+    },
+    {
+      "term": "CDRR",
+      "expansion": "Chronic Disease Risk Reduction Intake",
+      "short": "The intake below which your risk of a diet-related chronic disease (like high blood pressure) starts to drop.",
+      "long": "Set for sodium (2300 mg/day for adults 19–70) and potassium by the 2019 NASEM report. It is not a deficiency threshold — it is about reducing disease risk. The app shows it where relevant (e.g. sodium: 2300 mg CDRR, no UL exists).",
+      "simple_math": "Sodium CDRR = 2300 mg/day",
+      "category": "dri"
+    },
+    {
+      "term": "RNI",
+      "expansion": "Recommended Nutrient Intake (WHO)",
+      "short": "The WHO's version of the RDA — covers the needs of about 97.5% of healthy people.",
+      "long": "From the WHO/FAO reference values. Like the RDA it is a high target (mean + 2 SD). WHO sets it for micronutrients where its 2004 tables have data; some nutrients have no WHO RNI at all (no WHO UL framework exists either).",
+      "simple_math": "RNI ≈ mean requirement + 2 SD",
+      "category": "dri"
+    },
+    {
+      "term": "PRI",
+      "expansion": "Population Reference Intake (EFSA)",
+      "short": "EFSA's version of the RDA — enough for essentially all (97.5%) healthy people.",
+      "long": "Set from the AR: PRI = AR + 2 CV (coefficient of variation). Used by EFSA for most vitamins and minerals. The app labels EFSA rows as PRI, not RDA, so the basis line never mislabels the standard.",
+      "simple_math": "PRI ≈ AR × 1.2 (typical)",
+      "category": "dri"
+    },
+    {
+      "term": "NAR",
+      "expansion": "Nutrient Adequacy Ratio",
+      "short": "How much of your estimated average need you're covering — intake divided by EAR/AR.",
+      "long": "NAR = intake ÷ EAR, capped at 1.0 (once you cover the average need, extra counts as 1). It only exists where an EAR/AR is published — that's why WHO mineral rows and AI-only rows show no NAR and use a percentage-of-reference path instead.",
+      "simple_math": "NAR = intake ÷ EAR (max 1.0)",
+      "category": "score"
+    },
+    {
+      "term": "MAR",
+      "expansion": "Mean Adequacy Ratio",
+      "short": "The average of your NARs across nutrients — one number for overall micronutrient coverage.",
+      "long": "MAR = mean of all NARs. 0.99 means you cover 99% of your estimated average needs on average. It is a summary, not a diagnosis — a single nutrient can still be low (see the pills).",
+      "simple_math": "MAR = average of all NAR values",
+      "category": "score"
+    },
+    {
+      "term": "HEI-2020",
+      "expansion": "Healthy Eating Index 2020",
+      "short": "A 0–100 diet-quality score against the US dietary guidelines, built from 13 food-group components.",
+      "long": "The official USDA/NCI diet-quality score. The app shows it as a headline quality metric — but HEI needs food-group servings (FPED-style mapping), not just nutrient totals, so it is deferred to the insight layer. The 7/30-day nutrient view is the live MVP score.",
+      "simple_math": "13 components, each 0–10/20 points, sum → 100",
+      "category": "score"
+    },
+    {
+      "term": "AMDR",
+      "expansion": "Acceptable Macronutrient Distribution Range",
+      "short": "The healthy range of % of energy from protein, carbs, and fat.",
+      "long": "Protein 10–35%, carbs 45–65%, fat 20–35% of energy. Targets in the app show grams AND % of energy, and check they sit inside the AMDR band.",
+      "simple_math": "e.g. protein 20% of 2845 kcal ≈ 142 g",
+      "category": "macro"
+    },
+    {
+      "term": "EER",
+      "expansion": "Estimated Energy Requirement",
+      "short": "The predicted daily energy intake that maintains current weight for your age, sex, size, and activity.",
+      "long": "Computed from the NASEM 2023 equations using age, sex, height, weight, and PAL. It is a prediction, not a measurement — which is exactly why the app shows a range (the ±SEPV band) and never a single point.",
+      "simple_math": "EER ≈ (predicted from age/sex/height/weight/PAL)",
+      "category": "energy"
+    },
+    {
+      "term": "SEPV",
+      "expansion": "Standard Error of Prediction (variability)",
+      "short": "How uncertain the energy estimate is — the reason you see a range like 2645–3045, not one number.",
+      "long": "The EER equation predicts an average; real individuals vary by roughly ±200 kcal. The app renders this honestly as an energy band with a provenance line, per the trust contract.",
+      "simple_math": "range = EER ± ~200 kcal",
+      "category": "energy"
+    },
+    {
+      "term": "PAL",
+      "expansion": "Physical Activity Level",
+      "short": "How active you are — total daily energy use divided by resting metabolism.",
+      "long": "Bands: sedentary ~1.4, low-active ~1.6, active ~1.8, very active ~2.0. It is one of the inputs to the EER equation. 'Low-active' in the demo profile is a PAL ≈ 1.6 (a desk job plus some walking).",
+      "simple_math": "PAL = total daily energy ÷ resting energy",
+      "category": "energy"
+    },
+    {
+      "term": "FFM",
+      "expansion": "Fat-Free Mass",
+      "short": "Your body weight minus body fat — the metabolically active tissue.",
+      "long": "When you provide a body-fat percentage, the app estimates FFM and uses the Cunningham equation for resting metabolism (more precise than weight-only). Without body-fat input, it uses the standard EER path.",
+      "simple_math": "FFM = weight × (1 − body fat fraction)",
+      "category": "energy"
+    },
+    {
+      "term": "DFE",
+      "expansion": "Dietary Folate Equivalent",
+      "short": "A unit for folate that corrects for how well your body absorbs it from food vs supplements.",
+      "long": "Folic acid (supplements/fortified food) is absorbed about 1.7× better than natural food folate. 1 µg DFE = 1 µg food folate = 0.6 µg folic acid. That's why folate targets are in 'µg DFE'.",
+      "simple_math": "1 µg DFE = 1 µg food folate = 0.6 µg folic acid",
+      "category": "unit"
+    },
+    {
+      "term": "RAE",
+      "expansion": "Retinol Activity Equivalent",
+      "short": "A unit for vitamin A that accounts for how efficiently plant vs animal sources convert.",
+      "long": "Animal vitamin A (retinol) is used directly; plant beta-carotene converts poorly. 1 µg RAE = 1 µg retinol = 12 µg beta-carotene. Vitamin A targets are expressed in µg RAE.",
+      "simple_math": "1 µg RAE = 1 µg retinol = 12 µg beta-carotene",
+      "category": "unit"
+    },
+    {
+      "term": "NE",
+      "expansion": "Niacin Equivalent",
+      "short": "A unit for vitamin B3 that includes the niacin your body can make from the amino acid tryptophan.",
+      "long": "60 mg of tryptophan = 1 mg niacin. Targets are in mg NE to count both food niacin and the tryptophan contribution.",
+      "simple_math": "1 mg NE = 1 mg niacin = 60 mg tryptophan",
+      "category": "unit"
+    },
+    {
+      "term": "sustained band",
+      "expansion": "Sustained intake band (7/30-day rolling)",
+      "short": "The app only speaks when a pattern holds over days — never on a single day.",
+      "long": "Status (under / approaching / good) is computed on a 7- or 30-day rolling mean, so one bad day (or one 5000 mg calcium meal) can't flip a pill. Single-day noise is ignored by design — no alarm fatigue.",
+      "simple_math": "status = f(7-day mean, not today)",
+      "category": "app"
+    },
+    {
+      "term": "no-data",
+      "expansion": "No logged intake in the window",
+      "short": "There is no logged intake for this nutrient — this is NOT the same as a deficiency.",
+      "long": "A nutrient shows 'no-data' when you haven't logged foods containing it in the window (daysCovered = 0). It deliberately does not render as 0% or 'under' — missing data must never masquerade as a measured deficit.",
+      "simple_math": "—",
+      "category": "app"
+    },
+    {
+      "term": "confidence tier",
+      "expansion": "How a food entry was logged",
+      "short": "Weighed > form > barcode > text > photo — how sure we are about the amount.",
+      "long": "Weighed entries are solid; form/barcode are mid; free-text is lower; photo is the least certain (20–50% error range) and always shows amber with 'estimate — edit to confirm'. It never merges silently into your totals.",
+      "simple_math": "—",
+      "category": "app"
+    },
+    {
+      "term": "standards",
+      "expansion": "Which authority's tables set your targets",
+      "short": "NASEM (US), WHO, Health Canada, or EFSA — you choose whose numbers define 'enough'.",
+      "long": "The same nutrient has different reference values per authority (e.g. vitamin C RDA 90 mg vs WHO RNI 45 mg — different criteria). The app is source-agnostic: you pick the standard, and every basis line says which one you're comparing against.",
+      "simple_math": "—",
+      "category": "app"
+    },
+    {
+      "term": "provenance",
+      "expansion": "Where a number came from",
+      "short": "Every computed number carries its source: equation, inputs, and evidence level.",
+      "long": "Tapping 'why this number?' shows the plain-language explanation of how a target was derived — not raw code. This is the trust contract: inspectable, honest, no black boxes.",
+      "simple_math": "—",
+      "category": "app"
+    },
+    {
+      "term": "rolling mean",
+      "expansion": "Average over a trailing window of days",
+      "short": "Your 7-day (or 30-day) average intake, updated day by day.",
+      "long": "The adequacy pills compare the trailing 7-day mean against your target — smoothing daily ups and downs into a pattern signal.",
+      "simple_math": "mean over last 7 days with logged intake",
+      "category": "app"
+    },
+    {
+      "term": "%reference",
+      "expansion": "Percentage-of-reference check",
+      "short": "The fallback comparison when a nutrient has no EAR/AR — how your intake compares to the published reference value.",
+      "long": "Where no NAR is possible (AI-only rows, WHO minerals), the app compares your mean directly to the reference (AI/RDA/RNI/PRI) as a percentage. The basis line always says 'no EAR/AR available' so the pill never pretends to be a NAR.",
+      "simple_math": "mean ÷ reference × 100 (under <75%, approaching <100%)",
+      "category": "score"
+    }
+  ],
+  "basis_templates": {
+    "energy": {
+      "machine": "NASEM 2023 EER(?:, ([\\w\\- ]+))?",
+      "body": "Your daily energy target is calculated from the NASEM Estimated Energy Requirement (EER) for your age, sex, life-stage, height, weight and activity level. Because individuals vary, we show it as a range — your 2,645–3,045 kcal band covers most people like you, not a single exact number. A day inside the band is on track; a day outside isn't a failure.",
+      "fields": [
+        "activity"
+      ]
+    },
+    "ear_based": {
+      "machine": "7-day rolling mean vs RDA (\\S+) ?(\\S+)? ?\\(EAR (\\S+?)\\)",
+      "body": "We compare your 7-day average intake against the Recommended Dietary Allowance (RDA) of {target} {unit} — the amount that covers nearly everyone's needs. Because one off day doesn't reflect a pattern, the green/gold/red pill only changes after a sustained band. The Estimated Average Requirement (EAR) of {ear} {unit} is the midpoint of the population's needs; NAR (Nutrient Adequacy Ratio) is your average divided by the EAR.",
+      "fields": [
+        "target",
+        "unit",
+        "ear"
+      ]
+    },
+    "ai_based": {
+      "machine": "7-day rolling mean vs AI (\\S+) ?(\\S+)?",
+      "body": "We compare your 7-day average intake against the Adequate Intake (AI) of {target} {unit}. AIs are set when evidence isn't strong enough to derive an RDA — they're a reasonable target, not a precise requirement. Because there's no Estimated Average Requirement (EAR), we use a soft %reference path instead of the formal NAR — meeting the AI counts as well-covered.",
+      "fields": [
+        "target",
+        "unit"
+      ]
+    },
+    "rni_based": {
+      "machine": "7-day rolling mean vs RNI (\\S+) ?(\\S+)?",
+      "body": "We compare your 7-day average intake against the WHO Reference Nutrient Intake (RNI) of {target} {unit} — the 97.5th-percentile requirement (similar to an RDA). Because WHO minerals don't publish an EAR, we use a soft %reference path: meeting the RNI counts as well-covered, and a sustained band drives the pill color.",
+      "fields": [
+        "target",
+        "unit"
+      ]
+    },
+    "pri_based": {
+      "machine": "7-day rolling mean vs PRI (\\S+) ?(\\S+)?",
+      "body": "We compare your 7-day average intake against the EFSA Population Reference Intake (PRI) of {target} {unit} — EFSA's equivalent of an RDA. EFSA publishes an Average Requirement (AR) for some nutrients, but not all; where AR is absent we use this soft %reference path, never a fabricated AR.",
+      "fields": [
+        "target",
+        "unit"
+      ]
+    },
+    "pregnancy_ai": {
+      "machine": "7-day rolling mean vs AI (\\S+) ?(\\S+)? ?\\(pregnancy\\)",
+      "body": "During pregnancy the target switches automatically to the pregnancy row of the DRI table. The {target} {unit} Adequate Intake reflects what evidence suggests covers nearly all pregnant people. Talk to your OB or a registered dietitian before making supplement decisions — these targets are reference values, not prescriptions.",
+      "fields": [
+        "target",
+        "unit"
+      ]
+    },
+    "rda_no_ear": {
+      "machine": "7-day rolling mean vs RDA (\\S+) ?(\\S+)?",
+      "body": "We compare your 7-day average intake against the Recommended Dietary Allowance (RDA) of {target} {unit}. For this nutrient, the official tables don't publish an Estimated Average Requirement, so we use a soft %reference path instead of the formal NAR — meeting the RDA counts as well-covered. (This is not the same as an AI; it's still an RDA.)",
+      "fields": [
+        "target",
+        "unit"
+      ]
+    },
+    "_note": "Patterns are anchored at the start, tolerant of the engine's optional suffix. Add a template for any new basis string rather than fall through."
+  }
+}
