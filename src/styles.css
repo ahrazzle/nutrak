@@ -64,6 +64,14 @@
   /* ---- Motion ---- */
   --ease: cubic-bezier(.25,.8,.25,1);
   --dur-fast: 120ms; --dur-med: 220ms;
+
+  /* ---- App-layout additions (pinned to their effective values — these
+         were referenced with fallbacks but never declared) ---- */
+  --txt-base: var(--txt-md);
+  --font-body: var(--font-ui);
+  --accent: #0f3460;
+  --highlight: #e94560;
+  --card: #f8f9fa;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -139,6 +147,20 @@ body {
 .entry .food { font-weight: var(--w-medium); }
 .entry .detail { font-size: var(--txt-sm); color: var(--ink-soft); }
 .entry .kcal { font-family: var(--font-num); font-size: var(--txt-md); font-weight: var(--w-semibold); }
+.entry-del {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink-faint);
+  border-radius: 50%; width: 32px; height: 32px; min-height: 32px; flex: none;
+  font-size: var(--txt-sm); cursor: pointer; line-height: 1;
+}
+.entry-del:hover { color: var(--rose); border-color: var(--rose-line); background: var(--rose-bg); }
+
+/* ---- Inline form error ---- */
+.field-err {
+  font-size: var(--txt-sm); color: var(--rose); background: var(--rose-bg);
+  border: 1px solid var(--rose-line); border-radius: var(--radius-md);
+  padding: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0;
+}
+.field-err[hidden] { display: none; }
 
 /* ---- Buttons ---- */
 .btn {
