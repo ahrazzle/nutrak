@@ -25,6 +25,13 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+/** Local calendar date (YYYY-MM-DD). `toISOString()` is UTC — for anyone
+    off UTC it flips "today" in the evening and splits one day's log in two. */
+function localDate(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /** Match a machine basis string against a template's `machine` pattern.
     {target}/{unit}/{ear} become capture groups; returns captures for
     interpolation. Halakukhan: never silently fall through to raw JSON. */
@@ -34,8 +41,10 @@ function basisTemplate(basisStr) {
   // Priority order: more-specific patterns first. `pregnancy_ai` must beat
   // `ai_based` — the generic AI regex matches pregnancy strings too, which
   // would silently drop the §12-locked "confirm with your OB/RD" referral.
+  // Unknown keys rank last (indexOf → -1 would otherwise sort them FIRST).
   const priority = ['pregnancy_ai', 'ear_based', 'rda_no_ear', 'rni_based', 'pri_based', 'ai_based', 'energy'];
-  entries.sort((a, b) => (priority.indexOf(a[0]) - priority.indexOf(b[0])));
+  const rank = (k) => { const i = priority.indexOf(k); return i === -1 ? priority.length : i; };
+  entries.sort((a, b) => rank(a[0]) - rank(b[0]));
   for (const [key, tpl] of entries) {
     // `machine` is now a real regex (raw string in the JSON). Patterns are
     // anchored at the start (`re.match`) and tolerant of the engine's optional
@@ -149,8 +158,9 @@ function adequacyPill(status) {
 function provLine(provenance, auto) {
   if (!provenance) return '';
   const kind = auto === false ? 'prov--flag' : 'prov--auto';
-  const basis = provenance.basis || provenance.equation || 'computed';
-  const uncertainty = provenance.uncertainty || '';
+  // Escape: basis/uncertainty come from the server/fixture — never raw HTML.
+  const basis = escapeHtml(provenance.basis || provenance.equation || 'computed');
+  const uncertainty = escapeHtml(provenance.uncertainty || '');
   return `<div class="prov ${kind}">▲ ${auto === false ? 'flag' : 'auto'} · ${basis}${uncertainty ? ' · ' + uncertainty : ''} <button data-prov='${encodeURIComponent(JSON.stringify(provenance))}'>why this number?</button></div>`;
 }
 
@@ -169,6 +179,12 @@ const store = {
     const l = this.getEntries();
     l.push({ ...e, serverId: null });
     this.set(LS.entries, l);
+  },
+  removeEntry(id) {
+    // Local-only delete (fat-finger fix). Entries already flushed to the
+    // server keep their server-side row — the API has no delete endpoint in
+    // this build, so this is documented, not silent.
+    this.set(LS.entries, this.getEntries().filter((x) => String(x.id) !== String(id)));
   },
   markSynced(id, serverId) {
     const l = this.getEntries();
@@ -226,7 +242,7 @@ async function flushEntries() {
 }
 async function sync() {
   const prof = store.getProfile();
-  if (DEMO) { setSync('demo'); renderToday(); renderAdequacy(); return; }
+  if (DEMO) { setSync('demo'); renderToday(); renderAdequacy(); renderProfile(); return; }
   setSync('offline');
   if (!prof) return;
   try {
@@ -240,7 +256,7 @@ async function sync() {
     online = false;
     setSync('offline');
   }
-  renderToday(); renderAdequacy();
+  renderToday(); renderAdequacy(); renderProfile();
 }
 function setSync(txt) {
   const el = document.getElementById('syncState');
@@ -270,6 +286,10 @@ function route() {
 let wizardState = { sex: 'M', repro: '' };
 const WIZARD_STEPS = 3;
 let wstep = 0;
+// True while the user is actively editing profile fields — renderProfile()
+// must not yank them back to the saved card (e.g. init sync resolving
+// mid-edit).
+let editingProfile = false;
 
 function showWStep(i) {
   wstep = i;
@@ -321,19 +341,97 @@ function renderResult() {
       <tr><th>Nutrient</th><th class="num">Target</th><th class="num">UL</th></tr>
       ${s.nutrients.slice(0, 8).map((n) => `
         <tr>
-          <td>${n.name}</td>
-          <td class="num">${n.value.toLocaleString()} ${n.unit} <span style="color:var(--ink-faint)">(${n.type})</span></td>
-          <td class="num" style="color:var(--ink-faint)">${n.ul ? n.ul.toLocaleString() + ' ' + n.unit : '—'}</td>
+          <td>${escapeHtml(n.name)}</td>
+          <td class="num">${n.value.toLocaleString()} ${escapeHtml(n.unit)} <span style="color:var(--ink-faint)">(${escapeHtml(n.type)})</span></td>
+          <td class="num" style="color:var(--ink-faint)">${n.ul ? n.ul.toLocaleString() + ' ' + escapeHtml(n.unit) : '—'}</td>
         </tr>`).join('')}
     </table>
   `;
 }
 
 /* ============================================================
+   SCREEN A (revisit): PROFILE — was called by route() but never defined,
+   throwing a ReferenceError on every #/profile navigation. The wizard
+   markup is static; this keeps it in sync with saved state.
+   ============================================================ */
+function syncChips(containerId, attr, value) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach((c) => {
+    c.classList.toggle('selected', String(c.dataset[attr] ?? '') === String(value ?? ''));
+  });
+}
+
+/** Prefill the wizard from the saved inputs so edits start from current
+    values instead of hard-coded defaults. No-op for demo profiles (the
+    fixture carries no inputs). */
+function prefillWizard(prof) {
+  const i = prof?.inputs;
+  if (!i) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== '') el.value = v; };
+  set('pAge', i.ageYears); set('pHeight', i.heightCm); set('pWeight', i.weightKg);
+  set('pPal', i.pal); set('pGoal', i.goal); set('pStandards', i.standards);
+  if (i.bodyFatFraction != null) set('pBf', Math.round(i.bodyFatFraction * 100));
+  if (i.sex) { wizardState.sex = i.sex; syncChips('pSexChips', 'sex', i.sex); }
+  wizardState.repro = i.reproState || '';
+  syncChips('pReproChips', 'repro', wizardState.repro);
+}
+
+function showSavedProfile() {
+  const prof = store.getProfile();
+  if (!prof) return;
+  editingProfile = false;
+  document.getElementById('profileWizard').style.display = 'none';
+  const saved = document.getElementById('profileSaved');
+  saved.style.display = 'block';
+  saved.innerHTML = `
+    <div class="card">
+      <div class="card-title">Profile saved · v${escapeHtml(prof.version)}</div>
+      <p>Your targets are computed from age/sex/life-stage + EER2023. Energy shown as a range (±SEPV).</p>
+      <div class="banner banner--warn">Editing any field later bumps the version and recomputes — review before continuing.</div>
+      <a class="btn btn--primary" href="#/today" style="text-decoration:none;display:inline-block">Go to Today →</a>
+      <button class="btn btn--ghost" id="pEdit2">Edit fields</button>
+    </div>`;
+  document.getElementById('pEdit2').addEventListener('click', () => {
+    editingProfile = true;
+    prefillWizard(prof);
+    document.getElementById('profileWizard').style.display = 'block';
+    saved.style.display = 'none';
+    showWStep(0);
+  });
+}
+
+function renderProfile() {
+  const prof = store.getProfile();
+  if (prof && editingProfile) return; // don't yank an in-progress edit
+  if (prof) { showSavedProfile(); return; }
+  document.getElementById('profileWizard').style.display = 'block';
+  document.getElementById('profileSaved').style.display = 'none';
+}
+
+function numField(id) {
+  const v = +document.getElementById(id).value;
+  return Number.isFinite(v) ? v : NaN;
+}
+/** Field-level validation before the compute call — a cleared number input
+    reads as NaN/0 and would otherwise be sent to the API as age 0. */
+function validateProfileInputs() {
+  const problems = [];
+  const age = numField('pAge'), h = numField('pHeight'), w = numField('pWeight');
+  const bfRaw = document.getElementById('pBf').value.trim();
+  if (!Number.isFinite(age) || age < 1 || age > 120) problems.push('Age must be between 1 and 120.');
+  if (!Number.isFinite(h) || h < 80 || h > 250) problems.push('Height must be between 80 and 250 cm.');
+  if (!Number.isFinite(w) || w < 20 || w > 400) problems.push('Weight must be between 20 and 400 kg.');
+  if (bfRaw !== '') {
+    const bf = +bfRaw;
+    if (!Number.isFinite(bf) || bf < 3 || bf > 60) problems.push('Body fat must be between 3 and 60%.');
+  }
+  return problems;
+}
+
+/* ============================================================
    SCREEN B: TODAY
    ============================================================ */
 function kcalToday() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDate();
   return store.getEntries().filter((e) => e.date === today).reduce((s, e) => s + e.kcal, 0);
 }
 
@@ -373,7 +471,7 @@ function renderToday() {
 
   // Macros — g + %energy from logged entries (derived: kcal split estimate).
   const entries = store.getEntries();
-  const todayEntries = entries.filter((en) => en.date === new Date().toISOString().slice(0, 10));
+  const todayEntries = entries.filter((en) => en.date === localDate());
   const pG = todayEntries.reduce((s2, en) => s2 + (en.macros?.protein || 0), 0);
   const cG = todayEntries.reduce((s2, en) => s2 + (en.macros?.carbs || 0), 0);
   const fG = todayEntries.reduce((s2, en) => s2 + (en.macros?.fat || 0), 0);
@@ -401,8 +499,8 @@ function renderToday() {
           <div class="adeq-row">
             <div class="left">
               <div>
-                <div class="name">${n.name}</div>
-                <div class="sub num">${n.pctTarget}% of ${n.targetType} ${n.target} ${n.unit}${n.ear ? ' · EAR ' + n.ear : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
+                <div class="name">${escapeHtml(n.name)}</div>
+                <div class="sub num">${n.pctTarget}% of ${escapeHtml(n.targetType)} ${n.target} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
               </div>
             </div>
             ${adequacyPill(n.status)}
@@ -421,10 +519,11 @@ function renderToday() {
     ? todayEntries.map((en) => `
         <div class="entry">
           <div>
-            <div class="food">${en.food}</div>
-            <div class="detail">${en.method || 'manual'} · 1 serving · ${tierBadge(en.tier)}</div>
+            <div class="food">${escapeHtml(en.food)}</div>
+            <div class="detail">${escapeHtml(en.method || 'manual')} · 1 serving · ${tierBadge(en.tier)}</div>
           </div>
           <span class="kcal num">${en.kcal.toLocaleString()} kcal</span>
+          <button class="entry-del" data-del="${en.id}" aria-label="Delete entry" title="Delete entry">✕</button>
         </div>`).join('')
     : demoRange
       ? `<div class="empty">Demo data covers <b>${demoRange}</b> — today's date isn't in that window, so 0 kcal here is expected. <a href="#/log">Log against it →</a></div>`
@@ -437,8 +536,10 @@ function renderToday() {
 let logTier = 'weighed';
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
-  document.querySelectorAll('.tabpane').forEach((p) => {
+  // Scoped to the log screen — the adequacy window tabs manage their own
+  // .active state via the [data-win] handler.
+  document.querySelectorAll('#screen-log .tab[data-tab]').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('#screen-log .tabpane').forEach((p) => {
     p.style.display = p.dataset.pane === name ? 'block' : 'none';
   });
 }
@@ -471,8 +572,8 @@ function renderAdequacy() {
       <div class="adeq-row">
         <div class="left">
           <div>
-            <div class="name">${n.name}</div>
-            <div class="sub num">${n.pctTarget}% of ${n.targetType} ${n.target} ${n.unit}${n.ear ? ' · EAR ' + n.ear : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
+            <div class="name">${escapeHtml(n.name)}</div>
+            <div class="sub num">${n.pctTarget}% of ${escapeHtml(n.targetType)} ${n.target} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
           </div>
         </div>
         ${adequacyPill(n.status)}
@@ -508,11 +609,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('pNext1').addEventListener('click', () => showWStep(1));
   document.getElementById('pBack0').addEventListener('click', () => showWStep(0));
   document.getElementById('pNext2').addEventListener('click', async () => {
+    const problems = validateProfileInputs();
+    const errEl = document.getElementById('pErr2');
+    if (problems.length) {
+      errEl.hidden = false;
+      errEl.textContent = problems.join(' ');
+      return;
+    }
+    errEl.hidden = true;
     const body = buildProfileRequest();
     try {
       // Compute via API — response carries the REAL userId + version + changed.
       const data = await api('/api/profile', { method: 'POST', body: JSON.stringify(body) });
-      store.setProfile({ userId: data.userId, version: data.version, changed: data.changed, snapshot: data.snapshot });
+      // Persist the inputs too — edits prefill from current values, and
+      // re-save upserts the same userId lineage (P0-1), never orphans.
+      store.setProfile({ userId: data.userId, version: data.version, changed: data.changed, snapshot: data.snapshot, inputs: body });
       showWStep(2);
       renderResult();
       renderToday();
@@ -522,46 +633,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   document.getElementById('pSave').addEventListener('click', () => {
-    const prof = store.getProfile();
-    document.getElementById('profileWizard').style.display = 'none';
-    const saved = document.getElementById('profileSaved');
-    saved.style.display = 'block';
-    saved.innerHTML = `
-      <div class="card">
-        <div class="card-title">Profile saved · v${prof.version}</div>
-        <p>Your targets are computed from age/sex/life-stage + EER2023. Energy shown as a range (±SEPV).</p>
-        <div class="banner banner--warn">Editing any field later bumps the version and recomputes — review before continuing.</div>
-        <a class="btn btn--primary" href="#/today" style="text-decoration:none;display:inline-block">Go to Today →</a>
-        <button class="btn btn--ghost" id="pEdit2">Edit fields</button>
-      </div>`;
-    document.getElementById('pEdit2').addEventListener('click', () => {
-      document.getElementById('profileWizard').style.display = 'block';
-      saved.style.display = 'none';
-      showWStep(0);
-    });
+    showSavedProfile();
     sync();
   });
   document.getElementById('pEdit').addEventListener('click', () => {
+    editingProfile = true;
+    prefillWizard(store.getProfile());
     showWStep(0);
   });
 
   // Log wiring.
-  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+  // Log tabs only — scoped to #screen-log. The adequacy window tabs
+  // ([data-win]) have their own handler; a global '.tab' listener here
+  // fired switchTab(undefined) on 7d/30d clicks and hid every log pane.
+  document.querySelectorAll('#screen-log .tab[data-tab]').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
   document.getElementById('fTierChips').addEventListener('click', (ev) => {
     const b = ev.target.closest('.chip'); if (!b) return;
     logTier = b.dataset.tier;
     document.querySelectorAll('#fTierChips .chip').forEach((c) => c.classList.toggle('selected', c === b));
   });
+  /** Inline form error: shows msg in elId, returns false when invalid. */
+  function fieldError(elId, msg) {
+    const el = document.getElementById(elId);
+    el.hidden = !msg;
+    el.textContent = msg || '';
+    return !msg;
+  }
   document.getElementById('fAdd').addEventListener('click', () => {
     const food = document.getElementById('fFood').value.trim();
     const kcal = +document.getElementById('fKcal').value;
-    if (!food || !kcal) return;
-    const date = new Date().toISOString().slice(0, 10);
-    store.addEntry({ id: Date.now(), date, food, kcal, tier: logTier, method: 'form' });
+    const msg = !food ? 'Name the food first.'
+      : (!Number.isFinite(kcal) || kcal <= 0) ? 'Energy must be a positive number.'
+      : '';
+    if (!fieldError('fErr', msg)) return;
+    store.addEntry({ id: Date.now(), date: localDate(), food, kcal, tier: logTier, method: 'form' });
     document.getElementById('fFood').value = '';
     document.getElementById('fKcal').value = '';
     renderToday();
     location.hash = '#/today';
+  });
+
+  // Delete a mis-logged entry (delegated — rows re-render on every change).
+  document.getElementById('todayLog').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-del]');
+    if (!b) return;
+    store.removeEntry(b.dataset.del);
+    renderToday();
   });
 
   // Photo tab — the non-negotiable contract.
@@ -572,9 +689,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('phConfirm').addEventListener('click', () => {
     const food = document.getElementById('phFood').value.trim();
     const kcal = +document.getElementById('phKcal').value;
-    if (!food || !kcal) return;
-    const date = new Date().toISOString().slice(0, 10);
-    store.addEntry({ id: Date.now(), date, food, kcal, tier: 'photo', method: 'photo' });
+    const msg = !food ? 'Name the food first.'
+      : (!Number.isFinite(kcal) || kcal <= 0) ? 'Energy must be a positive number.'
+      : '';
+    if (!fieldError('phErr', msg)) return;
+    store.addEntry({ id: Date.now(), date: localDate(), food, kcal, tier: 'photo', method: 'photo' });
     document.getElementById('photoEstimate').style.display = 'none';
     document.getElementById('photoDrop').style.display = 'block';
     renderToday();

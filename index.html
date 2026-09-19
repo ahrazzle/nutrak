@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1a1d21">
+<meta name="description" content="Nutrak — evidence-based nutrition tracking: log food, track macros and micronutrients against DRI standards, offline-first PWA.">
 <title>Nutrak — Nutrition Tracker</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="./src/styles.css">
@@ -40,7 +41,7 @@
           <div class="field">
             <label>Sex</label>
             <div class="chips" id="pSexChips">
-              <button type="button" class="chip" data-sex="M">Male</button>
+              <button type="button" class="chip selected" data-sex="M">Male</button>
               <button type="button" class="chip" data-sex="F">Female</button>
             </div>
           </div>
@@ -89,6 +90,7 @@
             <label for="pBf">Body fat % (optional → body-composition-adjusted energy)</label>
             <input type="number" id="pBf" min="3" max="60" placeholder="e.g. 25" inputmode="decimal">
           </div>
+          <div class="field-err" id="pErr2" role="alert" hidden></div>
           <button class="btn btn--ghost" id="pBack0">← Back</button>
           <button class="btn btn--primary" id="pNext2">Compute my targets →</button>
         </div>
@@ -166,6 +168,7 @@
           </div>
         </div>
         <button class="btn btn--primary" id="fAdd">Add entry</button>
+        <div class="field-err" id="fErr" role="alert" hidden></div>
       </div>
     </div>
 
@@ -211,6 +214,7 @@
           </div>
           <div class="field"><label for="phFood">Recognized food</label><input type="text" id="phFood" value="Rice bowl with chicken"></div>
           <div class="field"><label for="phKcal">Recognized energy (kcal)</label><input type="number" id="phKcal" value="540" inputmode="numeric"></div>
+          <div class="field-err" id="phErr" role="alert" hidden></div>
           <div style="display:flex;gap:var(--sp-3)">
             <button class="btn btn--primary" id="phConfirm">Confirm &amp; log</button>
             <button class="btn btn--ghost" id="phDiscard">Discard</button>
