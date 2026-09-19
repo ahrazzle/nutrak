@@ -65,8 +65,11 @@
   --ease: cubic-bezier(.25,.8,.25,1);
   --dur-fast: 120ms; --dur-med: 220ms;
 
-  /* ---- App-layout additions (pinned to their effective values — these
-         were referenced with fallbacks but never declared) ---- */
+  /* ---- App-layout additions: referenced with fallbacks but never declared.
+         --accent / --highlight / --card equal their former inline fallbacks.
+         --txt-base / --font-body were undeclared, so declarations using them were
+         dropped by the cascade and .prov-words inherited its parent's font/size
+         (finding F1, 2026-09-19 review receipt). ---- */
   --txt-base: var(--txt-md);
   --font-body: var(--font-ui);
   --accent: #0f3460;

@@ -7,13 +7,20 @@
    ============================================================ */
 'use strict';
 
-const API = 'http://127.0.0.1:3001';
+const API_DEFAULT = 'http://127.0.0.1:3001';
+const API_OVERRIDE = (() => {
+  const q = new URLSearchParams(location.search).get('api');
+  if (q) return q === 'local' ? '' : q.replace(/\/+$/, '');
+  return (window.NUTRAK_API || '').replace(/\/+$/, '');
+})();
+const API = API_OVERRIDE || API_DEFAULT;
 /* ---------- demo mode (GH Pages showcase, no local API) ----------
    Halakukhan: the fetch path must short-circuit BEFORE first paint on
    GH Pages — 127.0.0.1:3001 is unreachable there. When demo/fixture.json
    exists next to the app, api() serves REAL captured engine output from it
    (fixture generated live from the API, never hand-written). */
 let DEMO = false;
+let NO_DEMO_DATA = false;
 let DEMO_FIXTURE = null;
 /* ---------- glossary + plain-language explanations (user-facing) ----------
    User directive: "why this number?" must show WORDS + at most simple math,
@@ -161,7 +168,7 @@ function provLine(provenance, auto) {
   // Escape: basis/uncertainty come from the server/fixture — never raw HTML.
   const basis = escapeHtml(provenance.basis || provenance.equation || 'computed');
   const uncertainty = escapeHtml(provenance.uncertainty || '');
-  return `<div class="prov ${kind}">▲ ${auto === false ? 'flag' : 'auto'} · ${basis}${uncertainty ? ' · ' + uncertainty : ''} <button data-prov='${encodeURIComponent(JSON.stringify(provenance))}'>why this number?</button></div>`;
+  return `<div class="prov ${kind}">▲ ${auto === false ? 'flag' : 'auto'} · ${basis}${uncertainty ? ' · ' + uncertainty : ''} <button data-prov='${escapeHtml(encodeURIComponent(JSON.stringify(provenance)))}'>why this number?</button></div>`;
 }
 
 /* ---------- local store (offline-first) ---------- */
@@ -323,7 +330,11 @@ function renderResult() {
   if (!prof) { el.innerHTML = '<div class="empty">No computed profile yet.</div>'; return; }
   const s = prof.snapshot;
   const e = s.energy;
+  const demoNote = DEMO
+    ? `<div class="banner banner--warn">Demo data — these targets are a captured engine snapshot (generated ${escapeHtml(DEMO_FIXTURE?.meta?.generated || 'unknown')}), not a computation from the values you entered.</div>`
+    : '';
   el.innerHTML = `
+    ${demoNote}
     <div class="rangeband">
       <div class="target" style="left:0;right:0"></div>
     </div>
@@ -494,13 +505,13 @@ function renderToday() {
         .filter((n) => ['calcium', 'iron', 'vitamin_c', 'protein', 'folate'].includes(n.id))
         .slice(0, 5)
         .map((n) => {
-          const prov = encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode }));
+          const prov = escapeHtml(encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode })));
           return `
           <div class="adeq-row">
             <div class="left">
               <div>
                 <div class="name">${escapeHtml(n.name)}</div>
-                <div class="sub num">${n.pctTarget}% of ${escapeHtml(n.targetType)} ${n.target} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
+                <div class="sub num">${escapeHtml(n.pctTarget)}% of ${escapeHtml(n.targetType)} ${escapeHtml(n.target)} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
               </div>
             </div>
             ${adequacyPill(n.status)}
@@ -567,19 +578,30 @@ function renderAdequacy() {
     </div>
     <div class="adeq-grid">
     ${agg.nutrients.map((n) => {
-      const prov = encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode }));
+      const prov = escapeHtml(encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode })));
       return `
       <div class="adeq-row">
         <div class="left">
           <div>
             <div class="name">${escapeHtml(n.name)}</div>
-            <div class="sub num">${n.pctTarget}% of ${escapeHtml(n.targetType)} ${n.target} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
+            <div class="sub num">${escapeHtml(n.pctTarget)}% of ${escapeHtml(n.targetType)} ${escapeHtml(n.target)} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
           </div>
         </div>
         ${adequacyPill(n.status)}
       </div>`;
     }).join('')}
     </div>`;
+}
+
+function storageAvailable() {
+  try {
+    const probe = '__nutrak_probe__';
+    localStorage.setItem(probe, probe);
+    localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /* ============================================================
@@ -628,8 +650,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderResult();
       renderToday();
     } catch {
-      setSync('offline');
-      document.getElementById('pResult').innerHTML = '<div class="empty">API offline — profile needs the server for first compute.</div>';
+      setSync(DEMO ? 'demo' : 'offline');
+      document.getElementById('pResult').innerHTML = NO_DEMO_DATA
+        ? '<div class="empty">This deployed build has no live server behind it, and its demo data did not load — so targets cannot be computed here. It is a front-end demo: run the API locally (see the README) or add <code>?api=https://your-api</code> to point it at a real backend.</div>'
+        : '<div class="empty">API offline — profile needs the server for first compute.</div>';
     }
   });
   document.getElementById('pSave').addEventListener('click', () => {
@@ -704,6 +728,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('photoDrop').style.display = 'block';
   });
 
+  // Barcode / free-text: no lookup engine ships in this build. These controls
+  // previously did nothing at all on click — an inert button with no feedback
+  // reads as broken, not as "not yet".
+  document.getElementById('bLookup').addEventListener('click', () => {
+    const code = document.getElementById('bCode').value.trim();
+    document.getElementById('bResult').textContent = code
+      ? `Barcode lookup is not part of this build — no product database is bundled or configured, so "${code}" cannot be resolved here. Log the food on the Form tab instead.`
+      : 'Barcode lookup is not part of this build. Enter a code to see how it would be handled, or log the food on the Form tab.';
+  });
+  document.getElementById('tParse').addEventListener('click', () => {
+    document.getElementById('tResult').textContent = 'Free-text parsing is not part of this build — it needs the server-side parser this deployment does not have. Log the food on the Form tab instead.';
+  });
+
   // Adequacy window toggle.
   document.querySelectorAll('[data-win]').forEach((t) => t.addEventListener('click', () => {
     adeqWin = +t.dataset.win;
@@ -753,9 +790,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Demo mode bootstrap (GH Pages): load the captured fixture BEFORE any
   // sync so first paint uses real engine output, not a dead fetch.
   // Guard: only on non-local hosts (GH Pages) — localhost:3001 keeps the
-  // live-API dev experience. `?demo` forces it anywhere.
-  const demoHost = !['127.0.0.1', 'localhost'].includes(location.hostname);
-  if (demoHost || location.search.includes('demo')) {
+  // live-API dev experience. An explicit `?api=`/`window.NUTRAK_API` override
+  // disables the fixture too: the deployment is then a real client, not a demo.
+  const demoHost = !['127.0.0.1', 'localhost'].includes(location.hostname) && !API_OVERRIDE;
+  if (demoHost) {
     try {
       const r = await fetch('demo/fixture.json', { cache: 'no-store' });
       if (r.ok) {
@@ -774,8 +812,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           footText.textContent = `Demo data · generated ${meta.generated || 'unknown'} · ${meta.source || 'captured from engine'} · standards: ${meta.standards || 'NASEM'}`;
           foot.hidden = false;
         }
+      } else {
+        NO_DEMO_DATA = true;
       }
-    } catch { /* not demo — normal offline-first boot */ }
+    } catch { NO_DEMO_DATA = true; /* not demo — normal offline-first boot */ }
+  }
+  // Storage disabled (private mode, blocked, quota): every store.get/store.set
+  // already fails soft, but without a visible notice nothing would work and
+  // nothing would say why.
+  if (!storageAvailable()) {
+    const foot = document.getElementById('appFooter');
+    const footText = document.getElementById('footnoteText');
+    if (foot && footText) {
+      footText.textContent = 'Local storage is unavailable in this browser session — profile, food log, and adequacy data will not be saved. Check private-browsing mode or site settings.';
+      foot.hidden = false;
+    }
   }
   sync();
 });
