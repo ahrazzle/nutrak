@@ -51,7 +51,15 @@ ok(fixture.entryPayloads?.length === fixture.entries.length, 'entryPayloads cove
 /* ---------- 3. App logic in a sandbox (real functions, stubbed DOM) ---------- */
 section('app logic (vm sandbox)');
 const appSrc = read('src/app.js');
-const sandbox = { document: { addEventListener() {} }, console };
+/* location/window: app.js top level reads ?api= and window.NUTRAK_API —
+   the sandbox must expose them or the module fails to load. */
+const sandbox = {
+  document: { addEventListener() {} },
+  location: { search: '', hostname: 'localhost' },
+  window: {},
+  URLSearchParams,
+  console,
+};
 vm.createContext(sandbox);
 const driver = `
 ;globalThis.__t = {
@@ -140,6 +148,54 @@ try {
   execSync('node --check src/app.js && node --check sw.js', { cwd: ROOT, stdio: 'pipe' });
   ok(true, 'node --check passes on app.js and sw.js');
 } catch { ok(false, 'node --check passes on app.js and sw.js'); }
+
+/* ---------- SPARKY-1: trust-contract fixes (2026-09-19) ---------- */
+section('SPARKY-1 trust contract');
+// Item A: provenance attribute encoding (finding F2)
+ok(/escapeHtml\(encodeURIComponent\(JSON\.stringify\(provenance\)\)\)/.test(appSrc), 'provLine escapes the encoded payload (F2)');
+ok(/const prov = escapeHtml\(encodeURIComponent\(JSON\.stringify\(\{ basis: n\.basis/.test(appSrc), 'ticker/adequacy provenance wrapped in escapeHtml (F2)');
+ok(/escapeHtml\(n\.pctTarget\)/.test(appSrc) && /escapeHtml\(n\.target\)\}/.test(appSrc), 'n.pctTarget and n.target escaped in sub line (F2)');
+{
+  const p = T.provLine({ basis: "women's RDA", auto: true });
+  ok(p.includes('data-prov'), 'provLine renders a data-prov attribute');
+  ok(!/'[A-Za-z%]*'/.test(p.match(/data-prov='(.*?)'/)[1]), 'attribute payload contains no raw single quotes');
+  // Real round-trip, exactly as an HTML parser reads it: data-prov='...' ends
+  // at the next RAW single quote. The full JSON must survive that extraction,
+  // HTML-unescape, decodeURIComponent and JSON.parse with basis intact.
+  const m = p.match(/data-prov='([^']*)'/);
+  ok(!!m, 'data-prov attribute is quote-delimited');
+  let roundTrip = null;
+  try {
+    const raw = m[1].replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    roundTrip = JSON.parse(decodeURIComponent(raw)).basis;
+  } catch { roundTrip = null; }
+  ok(roundTrip === "women's RDA", 'attribute payload round-trips basis with apostrophe intact');
+  ok(!/'/.test(m[1]), 'attribute payload contains no raw apostrophes at all');
+  ok(m[1].includes('&#39;'), 'apostrophe is HTML-escaped inside the attribute payload');
+}
+// Item B: CSS comment corrected, values untouched (finding F1)
+{
+  const css = read('src/styles.css');
+  ok(!/pinned to their effective values/.test(css), 'stale "pinned to their effective values" claim removed (F1)');
+  ok(/--txt-base:\s*var\(--txt-md\);/.test(css) && /--font-body:\s*var\(--font-ui\);/.test(css), '--txt-base/--font-body values unchanged (F1)');
+}
+// Item C: dead controls wired honestly
+ok(/getElementById\('bLookup'\)\.addEventListener\('click'/.test(appSrc), 'bLookup click wired');
+ok(/getElementById\('tParse'\)\.addEventListener\('click'/.test(appSrc), 'tParse click wired');
+ok(/Barcode lookup is not part of this build/.test(appSrc), 'barcode button says not-part-of-build');
+ok(/on the Form tab/.test(appSrc), 'barcode button redirects to Form tab');
+ok(/Free-text parsing is not part of this build/.test(appSrc), 'free-text button says not-part-of-build');
+// Item D: demo fixture labelled as captured snapshot
+ok(/Demo data — these targets are a captured engine snapshot/.test(appSrc), 'renderResult warns demo targets are a captured snapshot');
+// Item E: API override + NO_DEMO_DATA
+ok(/const API_OVERRIDE =/.test(appSrc) && /window\.NUTRAK_API/.test(appSrc), 'API base overridable via window.NUTRAK_API / ?api=');
+ok(/\?api===?'local'/.test(appSrc) || /q === 'local'/.test(appSrc), '?api=local returns to default base');
+ok(/let NO_DEMO_DATA = false;/.test(appSrc), 'NO_DEMO_DATA tracked beside DEMO');
+ok(/NO_DEMO_DATA\s*=\s*true/.test(appSrc), 'NO_DEMO_DATA set when fixture missing/failed');
+ok(/has no live server behind it, and its demo data did not load/.test(appSrc), 'honest hosted/no-server/no-fixture error shown');
+// Item F: storage availability
+ok(/function storageAvailable\(\)/.test(appSrc), 'storageAvailable() defined');
+ok(/Local storage is unavailable in this browser session/.test(appSrc), 'visible footer warning when storage blocked');
 
 /* ---------- summary ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
