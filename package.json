@@ -1,1 +1,12 @@
-{"description":"Nutrak staging PWA — nutrition tracker reviewed before promotion to production.","engines":{"node":">=18"},"name":"nutrak-staging","private":true,"scripts":{"test":"node tests/smoke.mjs"},"version":"0.1.0"}
+{
+  "description": "Nutrak staging PWA \u2014 nutrition tracker reviewed before promotion to production.",
+  "engines": {
+    "node": ">=18"
+  },
+  "name": "nutrak-staging",
+  "private": true,
+  "scripts": {
+    "test": "node tests/smoke.mjs && node tests/pwa-surface.mjs"
+  },
+  "version": "0.1.0"
+}
