@@ -7,6 +7,12 @@
 <meta name="description" content="Nutrak — evidence-based nutrition tracking: log food, track macros and micronutrients against DRI standards, offline-first PWA.">
 <title>Nutrak — Nutrition Tracker</title>
 <link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/favicon.ico" sizes="16x16 32x32">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nutrak">
 <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
@@ -139,7 +145,7 @@
   <!-- ============ SCREEN C: LOG ============ -->
   <section id="screen-log" class="screen">
     <h1>Add entry</h1>
-    <p class="lead">Four entry paths. Every entry carries a confidence tier — photo is always an estimate you confirm.</p>
+    <p class="lead">Log by form today — the photo flow is a working estimate-and-confirm demo, and barcode and free-text are marked previews. Every entry carries a confidence tier — photo is always an estimate you confirm.</p>
 
     <div class="tabs">
       <div class="tab active" data-tab="form">Form</div>
@@ -175,7 +181,7 @@
     <!-- Barcode tab (stub behind tier system) -->
     <div class="tabpane" data-pane="barcode" style="display:none">
       <div class="card">
-        <div class="card-title">Barcode (OFF API — 1 call = 1 scan, cached)</div>
+        <div class="card-title">Barcode (preview — not part of this build)</div>
         <div class="field">
           <label for="bCode">UPC / EAN</label>
           <input type="text" id="bCode" placeholder="e.g. 0 59000 01057 8" inputmode="numeric">
@@ -188,7 +194,7 @@
     <!-- Text tab (stub) -->
     <div class="tabpane" data-pane="text" style="display:none">
       <div class="card">
-        <div class="card-title">Free-text parse (server-side, cached)</div>
+        <div class="card-title">Free-text parse (preview — not part of this build)</div>
         <div class="field">
           <label for="tText">Describe your meal</label>
           <input type="text" id="tText" placeholder="e.g. grilled chicken salad with olive oil">
@@ -205,7 +211,7 @@
         <div class="empty" id="photoDrop">
           <div class="big">📷</div>
           <p>Recognition errors run 20–50%. A photo gives you an <b>estimate to confirm</b> — never a silently merged number.</p>
-          <button class="btn btn--ghost" id="pSimulate">Simulate recognition</button>
+          <button class="btn btn--ghost" id="pSimulate">Preview the estimate flow (no photo is uploaded)</button>
         </div>
         <div id="photoEstimate" style="display:none">
           <div class="photo-est">
