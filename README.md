@@ -1,8 +1,8 @@
-# Nutrak — Staging
+# Nutrak
 
 Nutrition tracker — log food by text, photo, or form; track macros, vitamins, and minerals against DRI-based standards.
 
-This is the staging build reviewed before promotion to production.
+Production build — promoted after the staging review.
 
 - `src/` / `index.html` / `sw.js` — PWA app
 - `manifest.json` / `icons/` — installable PWA assets
@@ -13,7 +13,7 @@ This is the staging build reviewed before promotion to production.
 
 - JSON validity + demo fixture shape (everything `render*` dereferences)
 - the trust contract, executed for real: every fixture basis string resolves to a glossary template — direct `basisCode` lookup or legacy regex fallback — never a silent fall-through to raw JSON
-- regression guards from the staging review: XSS escaping, local-date stamping, `renderProfile`, tab scoping, SW cache version/shell
+- regression guards: XSS escaping, local-date stamping, `renderProfile`, tab scoping, SW cache version/shell
 
 ## Demo fixture
 
