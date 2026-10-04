@@ -1,8 +1,8 @@
-/* Nutrak staging smoke tests — `npm test` (node >= 18, no deps).
+/* Nutrak smoke tests — `npm test` (node >= 18, no deps).
  * Covers the review surface: the app's plain-language provenance path runs
  * for real (via vm sandbox), the fixture's basis strings all resolve to a
  * glossary template (trust contract: never silently fall through), and the
- * structural fixes from the staging review stay fixed. */
+ * structural fixes from the review stay fixed. */
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import vm from 'node:vm';
@@ -108,7 +108,7 @@ for (const n of adeq) {
 ok(unresolved.length === 0, 'every adequacy basis has a template (direct or legacy)', unresolved.slice(0, 3).join(' | '));
 ok(T.basisTemplate(snap.energy.basis)?.key === 'energy' || glossary.basis_templates[snap.energy.basisCode], 'profile energy basis resolves');
 
-/* ---------- 5. Staging-review regression guards (static) ---------- */
+/* ---------- 5. Review regression guards (static) ---------- */
 section('review regression guards');
 ok(/function renderProfile\(\)/.test(appSrc), 'renderProfile is defined (route() calls it)');
 ok(!/toISOString\(\)\.slice\(0, 10\)/.test(appSrc), 'no UTC toISOString date stamping left');

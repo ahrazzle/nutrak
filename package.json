@@ -1,9 +1,9 @@
 {
-  "description": "Nutrak staging PWA \u2014 nutrition tracker reviewed before promotion to production.",
+  "description": "Nutrak production PWA — nutrition tracker.",
   "engines": {
     "node": ">=18"
   },
-  "name": "nutrak-staging",
+  "name": "nutrak",
   "private": true,
   "scripts": {
     "test": "node tests/smoke.mjs && node tests/pwa-surface.mjs"
