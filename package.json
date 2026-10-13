@@ -1,12 +1,12 @@
 {
-  "description": "Nutrak production PWA — nutrition tracker.",
+  "description": "Nutrak production PWA \u2014 nutrition tracker.",
   "engines": {
     "node": ">=18"
   },
   "name": "nutrak",
   "private": true,
   "scripts": {
-    "test": "node tests/smoke.mjs && node tests/pwa-surface.mjs"
+    "test": "node tests/smoke.mjs && node tests/pwa-surface.mjs && node tests/today.mjs"
   },
   "version": "0.1.0"
 }

@@ -91,8 +91,8 @@ ok(/<meta name="apple-mobile-web-app-title" content="Nutrak">/.test(html), 'appl
 /* ---------- 4. Service worker ---------- */
 section('service worker');
 const sw = text('sw.js');
-ok(/const VERSION = 'nutrak-v8'/.test(sw), 'SW version bumped to nutrak-v8');
-ok(!/nutrak-v7/.test(sw), 'no nutrak-v7 remnant');
+ok(/const VERSION = 'nutrak-v9'/.test(sw), 'SW version bumped to nutrak-v9');
+ok(!/nutrak-v8/.test(sw), 'no nutrak-v8 remnant');
 ok(/const SHELL_CORE = \[/.test(sw), 'SHELL_CORE const declared');
 ok(/await cache\.addAll\(SHELL_CORE\)/.test(sw), 'core assets cached with addAll');
 ok(/SHELL_OPTIONAL/.test(sw) && /Promise\.all\(SHELL_OPTIONAL\.map\(\(u\) => cache\.add\(u\)\.catch\(\(\) => \{\}\)\)\)/.test(sw),
