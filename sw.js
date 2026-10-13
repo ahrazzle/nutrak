@@ -2,7 +2,7 @@
  * Cache-first for the app shell + bundled data (DRI reference lives in the
  * API, but aggregates are mirrored locally in the client store).
  */
-const VERSION = 'nutrak-v8';
+const VERSION = 'nutrak-v9';
 // CORE is what the app needs to boot offline: an all-or-nothing set — if any
 // of these fails, the install fails loudly and the old worker stays alive.
 // OPTIONAL is nice-to-have: each asset is cached individually and a failure

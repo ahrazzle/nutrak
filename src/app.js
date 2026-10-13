@@ -451,11 +451,13 @@ function renderToday() {
   const energyEl = document.getElementById('todayEnergy');
   const macroEl = document.getElementById('todayMacros');
   const tickEl = document.getElementById('todayTicker');
-  const logEl = document.getElementById('todayLog');
+  renderTodayLog();
+  macroEl.hidden = !prof;
 
   if (!prof) {
     energyEl.innerHTML = '<div class="empty"><div class="big">◉</div><p>Set up your profile to see targets.</p><a class="btn btn--primary" href="#/profile" style="text-decoration:none;display:inline-block;margin-top:var(--sp-3)">Create profile</a></div>';
-    macroEl.innerHTML = ''; tickEl.innerHTML = ''; logEl.innerHTML = '';
+    macroEl.innerHTML = '';
+    tickEl.innerHTML = '<div class="empty">Set up your profile to see adequacy targets. Food entries are saved separately in your log.</div>';
     return;
   }
 
@@ -519,6 +521,12 @@ function renderToday() {
         }).join('')
     : '<div class="empty">Log a few days to start your adequacy bands.</div>';
 
+
+}
+
+function renderTodayLog() {
+  const logEl = document.getElementById('todayLog');
+  const todayEntries = store.getEntries().filter((entry) => entry.date === localDate());
   // Today's log entries.
   // Demo mode: the fixture is date-stamped (e.g. 2026-08-23..29) — the
   // reviewer's "today" won't match, so cue that explicitly instead of a bare
