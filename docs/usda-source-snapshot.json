@@ -1,0 +1,1618 @@
+{
+  "source": "USDA FoodData Central official API",
+  "retrievedAt": "2026-11-06",
+  "basis": "100g edible portion",
+  "rawResponseSha256": {
+    "nutrak-usda.json": "a603a28c2c7c06787361d683d2a2ab7c70c41dfc5ddbad49c6d0a124afac606e",
+    "nutrak-usda-extra.json": "7198e07fc4070238838e5844f0c47117e464ef854c5784908458bf39a6db76bc"
+  },
+  "records": [
+    {
+      "fdcId": 169705,
+      "description": "Oats (Includes foods for USDA's Food Distribution Program)",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 389.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 16.89
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 66.27
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 6.9
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 10.6
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 54.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 4.72
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 177.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 429.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 2.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 3.97
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.119
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 56.0
+        }
+      ]
+    },
+    {
+      "fdcId": 168878,
+      "description": "Rice, white, long-grain, regular, enriched, cooked",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 130.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 2.69
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 28.17
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 0.28
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.4
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 10.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 1.2
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 12.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 35.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.49
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 0.04
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.093
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 97.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 2.1
+        }
+      ]
+    },
+    {
+      "fdcId": 171477,
+      "description": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 165.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 31.02
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 3.57
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 15.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 1.04
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 29.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 256.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 74.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 6.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.1
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 0.27
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.3
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.6
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.34
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 4.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 85.3
+        }
+      ]
+    },
+    {
+      "fdcId": 173424,
+      "description": "Egg, whole, cooked, hard-boiled",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 155.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 12.58
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 1.12
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 10.61
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 50.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 1.19
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 10.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 126.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 124.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 1.05
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 149.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 2.2
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 1.03
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.3
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.121
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 1.11
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 44.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 293.8
+        }
+      ]
+    },
+    {
+      "fdcId": 171265,
+      "description": "Milk, whole, 3.25% milkfat, with added vitamin D",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 61.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 3.15
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 4.8
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 3.25
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 113.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 0.03
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 10.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 132.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 43.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.37
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 46.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 1.3
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 0.07
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.3
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.036
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.45
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 5.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 14.3
+        }
+      ]
+    },
+    {
+      "fdcId": 172421,
+      "description": "Lentils, mature seeds, cooked, boiled, without salt",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 116.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 9.02
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 20.13
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 0.38
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 7.9
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 19.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 3.33
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 36.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 369.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 2.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 1.27
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 1.5
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 0.11
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 1.7
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.178
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 181.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 32.7
+        }
+      ]
+    },
+    {
+      "fdcId": 168462,
+      "description": "Spinach, raw",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 23.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 2.86
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 3.63
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 0.39
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 2.2
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 99.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 2.71
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 79.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 558.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 79.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.53
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 469.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 28.1
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 2.03
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 482.9
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.195
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 194.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 19.3
+        }
+      ]
+    },
+    {
+      "fdcId": 171413,
+      "description": "Oil, olive, salad or cooking",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 884.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 100.0
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 0.56
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 2.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 14.35
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 60.2
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 0.3
+        }
+      ]
+    },
+    {
+      "fdcId": 175168,
+      "description": "Fish, salmon, Atlantic, farmed, cooked, dry heat",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 206.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 22.1
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 12.35
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 15.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 0.34
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 30.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 384.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 61.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.43
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 69.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 3.7
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 13.1
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 1.14
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.1
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.647
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 2.8
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 34.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 90.5
+        }
+      ]
+    },
+    {
+      "fdcId": 170567,
+      "description": "Nuts, almonds",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 579.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 21.15
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 21.55
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 49.93
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 12.5
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 269.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 3.71
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 270.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 733.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 3.12
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 25.63
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.137
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 44.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 52.1
+        }
+      ]
+    },
+    {
+      "fdcId": 173944,
+      "description": "Bananas, raw",
+      "dataType": "SR Legacy",
+      "publicationDate": "4/1/2019",
+      "nutrientsPer100g": [
+        {
+          "canonicalId": "energy_kcal",
+          "id": 1008,
+          "name": "Energy",
+          "unit": "kcal",
+          "amount": 89.0
+        },
+        {
+          "canonicalId": "protein",
+          "id": 1003,
+          "name": "Protein",
+          "unit": "g",
+          "amount": 1.09
+        },
+        {
+          "canonicalId": "carbohydrate",
+          "id": 1005,
+          "name": "Carbohydrate, by difference",
+          "unit": "g",
+          "amount": 22.84
+        },
+        {
+          "canonicalId": "fat",
+          "id": 1004,
+          "name": "Total lipid (fat)",
+          "unit": "g",
+          "amount": 0.33
+        },
+        {
+          "canonicalId": "fiber",
+          "id": 1079,
+          "name": "Fiber, total dietary",
+          "unit": "g",
+          "amount": 2.6
+        },
+        {
+          "canonicalId": "calcium",
+          "id": 1087,
+          "name": "Calcium, Ca",
+          "unit": "mg",
+          "amount": 5.0
+        },
+        {
+          "canonicalId": "iron",
+          "id": 1089,
+          "name": "Iron, Fe",
+          "unit": "mg",
+          "amount": 0.26
+        },
+        {
+          "canonicalId": "magnesium",
+          "id": 1090,
+          "name": "Magnesium, Mg",
+          "unit": "mg",
+          "amount": 27.0
+        },
+        {
+          "canonicalId": "potassium",
+          "id": 1092,
+          "name": "Potassium, K",
+          "unit": "mg",
+          "amount": 358.0
+        },
+        {
+          "canonicalId": "sodium",
+          "id": 1093,
+          "name": "Sodium, Na",
+          "unit": "mg",
+          "amount": 1.0
+        },
+        {
+          "canonicalId": "zinc",
+          "id": 1095,
+          "name": "Zinc, Zn",
+          "unit": "mg",
+          "amount": 0.15
+        },
+        {
+          "canonicalId": "vitamin_a",
+          "id": 1106,
+          "name": "Vitamin A, RAE",
+          "unit": "µg",
+          "amount": 3.0
+        },
+        {
+          "canonicalId": "vitamin_c",
+          "id": 1162,
+          "name": "Vitamin C, total ascorbic acid",
+          "unit": "mg",
+          "amount": 8.7
+        },
+        {
+          "canonicalId": "vitamin_d",
+          "id": 1114,
+          "name": "Vitamin D (D2 + D3)",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "vitamin_e",
+          "id": 1109,
+          "name": "Vitamin E (alpha-tocopherol)",
+          "unit": "mg",
+          "amount": 0.1
+        },
+        {
+          "canonicalId": "vitamin_k",
+          "id": 1185,
+          "name": "Vitamin K (phylloquinone)",
+          "unit": "µg",
+          "amount": 0.5
+        },
+        {
+          "canonicalId": "vitamin_b6",
+          "id": 1175,
+          "name": "Vitamin B-6",
+          "unit": "mg",
+          "amount": 0.367
+        },
+        {
+          "canonicalId": "vitamin_b12",
+          "id": 1178,
+          "name": "Vitamin B-12",
+          "unit": "µg",
+          "amount": 0.0
+        },
+        {
+          "canonicalId": "folate",
+          "id": 1190,
+          "name": "Folate, DFE",
+          "unit": "µg",
+          "amount": 20.0
+        },
+        {
+          "canonicalId": "choline",
+          "id": 1180,
+          "name": "Choline, total",
+          "unit": "mg",
+          "amount": 9.8
+        }
+      ]
+    }
+  ]
+}

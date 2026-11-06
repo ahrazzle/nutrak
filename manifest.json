@@ -1,7 +1,7 @@
 {
-  "name": "Nutrak — Nutrition Tracker",
+  "name": "Nutrak \u2014 Nutrition Tracker",
   "short_name": "Nutrak",
-  "description": "Evidence-based nutrition tracking: benchmarks from verified DRI data, sustained-band adequacy, honest uncertainty.",
+  "description": "Private nutrition logging with sourced reference values, visible data coverage, and estimates you review.",
   "start_url": "./",
   "id": "./",
   "scope": "./",

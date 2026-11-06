@@ -1,12 +1,17 @@
 {
-  "description": "Nutrak production PWA \u2014 nutrition tracker.",
+  "description": "Local-first nutrition tracking with transparent references and optional reviewed photo estimates.",
   "engines": {
     "node": ">=18"
   },
   "name": "nutrak",
   "private": true,
   "scripts": {
-    "test": "node tests/smoke.mjs && node tests/pwa-surface.mjs && node tests/today.mjs"
+    "start": "node scripts/serve.mjs",
+    "test": "node tests/run.mjs",
+    "test:browser": "node tests/browser.mjs"
   },
-  "version": "0.1.0"
+  "version": "0.2.0",
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
 }
