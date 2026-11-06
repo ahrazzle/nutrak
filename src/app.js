@@ -1,840 +1,739 @@
-/* ============================================================
-   Nutrak PWA — app.js
-   Offline-first: reads local aggregates on first paint, syncs to
-   the API when reachable. All state persists in localStorage.
-   Visual contract: DESIGN-TOKENS.html (shayba) — tier badge and
-   adequacy pills are SINGLE SOURCE OF TRUTH components below.
-   ============================================================ */
-'use strict';
-
-const API_DEFAULT = 'http://127.0.0.1:3001';
-const API_OVERRIDE = (() => {
-  const q = new URLSearchParams(location.search).get('api');
-  if (q) return q === 'local' ? '' : q.replace(/\/+$/, '');
-  return (window.NUTRAK_API || '').replace(/\/+$/, '');
+"use strict";
+const $ = (s) => document.querySelector(s),
+  esc = (s) =>
+    String(s ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+const localDate = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const browserStorage = (() => {
+  try {
+    return localStorage;
+  } catch {
+    return {
+      getItem() {
+        throw Error("Browser storage is blocked.");
+      },
+      setItem() {
+        throw Error("Browser storage is blocked.");
+      },
+    };
+  }
 })();
-const API = API_OVERRIDE || API_DEFAULT;
-/* ---------- demo mode (GH Pages showcase, no local API) ----------
-   Halakukhan: the fetch path must short-circuit BEFORE first paint on
-   GH Pages — 127.0.0.1:3001 is unreachable there. When demo/fixture.json
-   exists next to the app, api() serves REAL captured engine output from it
-   (fixture generated live from the API, never hand-written). */
-let DEMO = false;
-let NO_DEMO_DATA = false;
-let DEMO_FIXTURE = null;
-/* ---------- glossary + plain-language explanations (user-facing) ----------
-   User directive: "why this number?" must show WORDS + at most simple math,
-   never code. glossary.json (Sheikh, research lane) carries basis_templates
-   keyed to the engine's machine basis strings + 26 term definitions. */
-let GLOSSARY = null; // { terms: [...], basis_templates: {...} }
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-/** Local calendar date (YYYY-MM-DD). `toISOString()` is UTC — for anyone
-    off UTC it flips "today" in the evening and splits one day's log in two. */
-function localDate(d = new Date()) {
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-/** Match a machine basis string against a template's `machine` pattern.
-    {target}/{unit}/{ear} become capture groups; returns captures for
-    interpolation. Halakukhan: never silently fall through to raw JSON. */
-function basisTemplate(basisStr) {
-  if (!GLOSSARY) return null;
-  const entries = Object.entries(GLOSSARY.basis_templates || {}).filter(([k]) => k !== '_note');
-  // Priority order: more-specific patterns first. `pregnancy_ai` must beat
-  // `ai_based` — the generic AI regex matches pregnancy strings too, which
-  // would silently drop the §12-locked "confirm with your OB/RD" referral.
-  // Unknown keys rank last (indexOf → -1 would otherwise sort them FIRST).
-  const priority = ['pregnancy_ai', 'ear_based', 'rda_no_ear', 'rni_based', 'pri_based', 'ai_based', 'energy'];
-  const rank = (k) => { const i = priority.indexOf(k); return i === -1 ? priority.length : i; };
-  entries.sort((a, b) => rank(a[0]) - rank(b[0]));
-  for (const [key, tpl] of entries) {
-    // `machine` is now a real regex (raw string in the JSON). Patterns are
-    // anchored at the start (`re.match`) and tolerant of the engine's optional
-    // suffix. Capture groups: [target], [unit?], [ear?] — see `fields` on the template.
-    const m = new RegExp(tpl.machine).exec(basisStr || '');
-    if (m) return { key, tpl, caps: m };
-  }
-  return null;
-}
-
-/** Auto-link glossary terms inside an explanation → clickable expansion. */
-function linkTerms(text) {
-  if (!GLOSSARY) return escapeHtml(text);
-  let out = escapeHtml(text);
-  const sorted = [...GLOSSARY.terms].sort((a, b) => b.term.length - a.term.length);
-  for (const t of sorted) {
-    const re = new RegExp(`\\b(${t.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
-    out = out.replace(re, `<span class="gloss-term" data-term="${t.term}" role="button" tabindex="0">$1</span>`);
-  }
-  return out;
-}
-
-/** Render the "why this number?" panel body from the stored provenance.
-    Primary path (azaraki structural kill): key off the engine's stable
-    `basisCode` enum — direct glossary.basis_templates lookup, no string
-    parsing. Legacy fallback: regex matcher for rows captured without a code
-    (old fixtures). Never raw JSON — unmatched → visible honest note. */
-function renderExplanation(p) {
-  let tpl = null;
-  if (p.basisCode && GLOSSARY?.basis_templates?.[p.basisCode]) {
-    tpl = { tpl: GLOSSARY.basis_templates[p.basisCode], caps: [] };
-  } else {
-    tpl = basisTemplate(p.basis); // legacy fallback
-  }
-  if (!tpl) {
-    return `<p class="prov-words">We don't have a plain-language explanation for this figure yet. The technical basis is: “${escapeHtml(p.basis || 'unknown')}” — it will be explained soon.</p>`;
-  }
-  // Interpolate from the stored fields (basisCode path) or capture groups
-  // (legacy regex path, template's declared field order).
-  const fields = tpl.tpl.fields || [];
-  const cap = (i) => (tpl.caps && tpl.caps[i] != null ? String(tpl.caps[i]) : '');
-  let words = tpl.tpl.body || tpl.tpl.words || '';
-  const interp = {
-    target: p.target ?? (fields.includes('target') ? cap(1) : ''),
-    unit:   p.unit   ?? (fields.includes('unit')   ? cap(2) : ''),
-    ear:    p.ear    ?? (fields.includes('ear')    ? cap(3) : ''),
-    activity: cap(1)
-  };
-  for (const k of Object.keys(interp)) {
-    words = words.replace(new RegExp(`\\{${k}\\}`, 'g'), interp[k]);
-  }
-  let html = `<p class="prov-words">${linkTerms(words)}</p>`;
-  // Footnote fallback: every glossary term referenced anywhere in the figure
-  // gets a clickable chip (user rule: clickable where possible, else footnote).
-  const referenced = new Set();
-  for (const t of GLOSSARY?.terms || []) {
-    if (new RegExp(`\\b${t.term}\\b`).test(`${p.basis || ''} ${words}`)) referenced.add(t.term);
-  }
-  if (referenced.size) {
-    html += `<div class="gloss-foot">Terms: ${[...referenced].map((term) => `<span class="gloss-term" data-term="${term}" role="button" tabindex="0">${term}</span>`).join(' ')}</div>`;
-  }
-  return html;
-}
-const LS = {
-  profile: 'nutrak.profile',     // { userId, version, snapshot }
-  entries: 'nutrak.entries',     // [{ id, date, food, kcal, tier, method }]
-  aggregates: 'nutrak.aggregates' // { 7: report, 30: report }
+const store = NutrakStore.create(browserStorage);
+let state = store.get(),
+  selectedDate = localDate(),
+  windowDays = 7,
+  photoData = null,
+  photoKey = "",
+  draft = null,
+  undo = null,
+  pendingBatch = null,
+  photoController = null,
+  photoGeneration = 0,
+  unsavedWarning = "",
+  externalChangeWarning = "",
+  barcodeController = null,
+  barcodeGeneration = 0;
+const names = {
+  energy_kcal: ["Energy", "kcal"],
+  protein: ["Protein", "g"],
+  carbohydrate: ["Carbohydrate", "g"],
+  fat: ["Fat", "g"],
+  fiber: ["Fiber", "g"],
+  calcium: ["Calcium", "mg"],
+  iron: ["Iron", "mg"],
+  magnesium: ["Magnesium", "mg"],
+  potassium: ["Potassium", "mg"],
+  sodium: ["Sodium", "mg"],
+  zinc: ["Zinc", "mg"],
+  vitamin_a: ["Vitamin A", "µg RAE"],
+  vitamin_c: ["Vitamin C", "mg"],
+  vitamin_d: ["Vitamin D", "µg"],
+  vitamin_e: ["Vitamin E", "mg α-tocopherol"],
+  vitamin_k: ["Vitamin K", "µg"],
+  vitamin_b6: ["Vitamin B6", "mg"],
+  vitamin_b12: ["Vitamin B12", "µg"],
+  folate: ["Folate", "µg DFE"],
+  choline: ["Choline", "mg"],
 };
-
-/* ---------- single source of truth: tier badge ---------- */
-const TIER_LABEL = {
-  weighed: 'Weighed',
-  form: 'Form',
-  barcode: 'Barcode',
-  text: 'Text',
-  photo: 'Photo'
+const statusText = {
+  insufficient_data: "Insufficient comparable data",
+  below_ai_uncertain: "Below AI · uncertain",
+  at_or_above_ai: "At or above AI",
+  below_rda: "Below RDA · planning signal",
+  at_or_above_rda: "At or above RDA",
+  energy_comparison: "Energy estimate comparison",
+  above_cdrr: "Above CDRR",
+  at_or_below_cdrr: "At or below CDRR",
 };
-const TIER_SOLID = ['weighed', 'form', 'barcode'];
-const TIER_SOFT = ['text', 'photo'];
-
-/** Render a confidence tier badge. photo is ALWAYS dashed amber + confirm text. */
-function tierBadge(tier) {
-  const label = TIER_LABEL[tier] || tier;
-  const cls = `tier tier--${tier}`;
-  if (tier === 'photo') {
-    return `<span class="${cls}"><span class="dot"></span><b>Photo · estimate — edit to confirm</b></span>`;
-  }
-  return `<span class="${cls}"><span class="dot"></span>${label}</span>`;
-}
-
-/* ---------- single source of truth: adequacy pill ---------- */
-const PILL_MAP = {
-  'sustained-good': 'pill--good',
-  approaching: 'pill--approaching',
-  under: 'pill--under',
-  'no-data': 'pill--nodata'
-};
-const PILL_TEXT = {
-  'sustained-good': 'good',
-  approaching: 'approaching',
-  under: 'under',
-  'no-data': 'no-data'
-};
-function adequacyPill(status) {
-  const cls = PILL_MAP[status] || 'pill--nodata';
-  const txt = PILL_TEXT[status] || status;
-  return `<span class="pill ${cls}">${txt}</span>`;
-}
-
-/* ---------- provenance (trust contract) ---------- */
-function provLine(provenance, auto) {
-  if (!provenance) return '';
-  const kind = auto === false ? 'prov--flag' : 'prov--auto';
-  // Escape: basis/uncertainty come from the server/fixture — never raw HTML.
-  const basis = escapeHtml(provenance.basis || provenance.equation || 'computed');
-  const uncertainty = escapeHtml(provenance.uncertainty || '');
-  return `<div class="prov ${kind}">▲ ${auto === false ? 'flag' : 'auto'} · ${basis}${uncertainty ? ' · ' + uncertainty : ''} <button data-prov='${escapeHtml(encodeURIComponent(JSON.stringify(provenance)))}'>why this number?</button></div>`;
-}
-
-/* ---------- local store (offline-first) ---------- */
-const store = {
-  get(k, fallback = null) {
-    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-  },
-  set(k, v) {
-    try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
-  },
-  getProfile() { return this.get(LS.profile); },
-  setProfile(p) { this.set(LS.profile, p); },
-  getEntries() { return this.get(LS.entries, []); },
-  addEntry(e) {
-    const l = this.getEntries();
-    l.push({ ...e, serverId: null });
-    this.set(LS.entries, l);
-  },
-  removeEntry(id) {
-    // Local-only delete (fat-finger fix). Entries already flushed to the
-    // server keep their server-side row — the API has no delete endpoint in
-    // this build, so this is documented, not silent.
-    this.set(LS.entries, this.getEntries().filter((x) => String(x.id) !== String(id)));
-  },
-  markSynced(id, serverId) {
-    const l = this.getEntries();
-    const i = l.findIndex((x) => x.id === id);
-    if (i >= 0) { l[i].serverId = serverId; this.set(LS.entries, l); }
-  },
-  pendingEntries() { return this.getEntries().filter((e) => !e.serverId); },
-  getAggregates() { return this.get(LS.aggregates, {}); },
-  setAggregates(a) { this.set(LS.aggregates, a); }
-};
-
-/* ---------- API client (network-first, offline fallback) ---------- */
-async function api(path, opts = {}) {
-  // Demo mode: serve the captured fixture — NO fetch, NO 127.0.0.1.
-  if (DEMO && DEMO_FIXTURE) {
-    await new Promise((r) => setTimeout(r, 120)); // simulate a quiet round-trip
-    if (path.startsWith('/api/adequacy')) {
-      const w = /window=(\d+)/.exec(path);
-      const win = w && w[1] === '30' ? 30 : 7;
-      return { ...DEMO_FIXTURE.adequacy, windowDays: win };
-    }
-    if (path.startsWith('/api/profile') && opts.method === 'POST') {
-      return { ...DEMO_FIXTURE.profile };
-    }
-    throw new Error(`demo fixture has no ${path}`);
-  }
-  const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts
-  });
-  if (!res.ok) throw new Error(`${path} → ${res.status}`);
-  return res.json();
-}
-
-let online = false;
-/** Flush locally-logged entries to the API (offline queue → server). */
-async function flushEntries() {
-  const prof = store.getProfile();
-  const pending = store.pendingEntries();
-  if (!prof?.userId || !pending.length) return;
-  for (const e of pending) {
-    try {
-      // Map the UI log entry to the API entry shape (confidence_tier contract).
-      const r = await api('/api/entries', {
-        method: 'POST',
-        body: JSON.stringify({
-          date: e.date, userId: prof.userId, foodLabel: e.food, quantity: 1,
-          confidenceTier: e.tier, method: e.method || 'form',
-          nutrients: e.nutrients || { energy_kcal: e.kcal },
-        }),
-      });
-      store.markSynced(e.id, r.id);
-    } catch { /* offline — stay queued */ }
-  }
-}
-async function sync() {
-  const prof = store.getProfile();
-  if (DEMO) { setSync('demo'); renderToday(); renderAdequacy(); renderProfile(); return; }
-  setSync('offline');
-  if (!prof) return;
-  try {
-    await flushEntries();
-    const a7 = await api(`/api/adequacy?userId=${prof.userId}&window=7`);
-    const a30 = await api(`/api/adequacy?userId=${prof.userId}&window=30`);
-    store.setAggregates({ 7: a7, 30: a30 });
-    online = true;
-    setSync('synced');
-  } catch {
-    online = false;
-    setSync('offline');
-  }
-  renderToday(); renderAdequacy(); renderProfile();
-}
-function setSync(txt) {
-  const el = document.getElementById('syncState');
-  if (el) el.textContent = txt;
-}
-
-/* ---------- router ---------- */
-const SCREENS = ['today', 'log', 'adequacy', 'profile'];
-function route() {
-  const h = location.hash || '#/today';
-  const name = (h.match(/#\/(\w+)/) || [])[1] || 'today';
-  SCREENS.forEach((s) => {
-    const el = document.getElementById('screen-' + s);
-    if (el) el.classList.toggle('active', s === name);
-  });
-  document.querySelectorAll('.bottomnav a').forEach((a) => {
-    a.classList.toggle('active', a.dataset.nav === name);
-  });
-  if (name === 'today') renderToday();
-  if (name === 'adequacy') renderAdequacy();
-  if (name === 'profile') renderProfile();
-}
-
-/* ============================================================
-   SCREEN A: PROFILE WIZARD
-   ============================================================ */
-let wizardState = { sex: 'M', repro: '' };
-const WIZARD_STEPS = 3;
-let wstep = 0;
-// True while the user is actively editing profile fields — renderProfile()
-// must not yank them back to the saved card (e.g. init sync resolving
-// mid-edit).
-let editingProfile = false;
-
-function showWStep(i) {
-  wstep = i;
-  document.querySelectorAll('.wizard-step').forEach((el, idx) => el.classList.toggle('active', idx === i));
-  document.querySelectorAll('.step-indicator .seg').forEach((el, idx) => {
-    el.classList.toggle('done', idx < i);
-    el.classList.toggle('current', idx === i);
-  });
-}
-
-function buildProfileRequest() {
-  const prof = store.getProfile();
+const fmt = (n) =>
+  Number.isFinite(n)
+    ? n.toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : "—";
+const profile = () =>
+  state.profile ? NutrakEngine.computeProfile(state.profile) : null;
+const entries = () => state.entries.filter((e) => e.date === selectedDate);
+function total(id, list = entries()) {
+  const known = list.filter((e) => Number.isFinite(e.nutrients[id]));
   return {
-    // P0-1: client holds userId — re-save upserts the same lineage, never orphans.
-    ...(prof?.userId ? { userId: prof.userId } : {}),
-    sex: wizardState.sex,
-    ageYears: +document.getElementById('pAge').value,
-    heightCm: +document.getElementById('pHeight').value,
-    weightKg: +document.getElementById('pWeight').value,
-    pal: document.getElementById('pPal').value,
-    goal: document.getElementById('pGoal').value,
-    standards: document.getElementById('pStandards').value,
-    ...(wizardState.repro ? { reproState: wizardState.repro } : {}),
-    ...(document.getElementById('pBf').value ? { bodyFatFraction: +document.getElementById('pBf').value / 100 } : {})
+    value: known.reduce((s, e) => s + e.nutrients[id], 0),
+    unknown: list.length - known.length,
+    known: known.length,
   };
 }
-
-function renderResult() {
-  const prof = store.getProfile();
-  const el = document.getElementById('pResult');
-  if (!prof) { el.innerHTML = '<div class="empty">No computed profile yet.</div>'; return; }
-  const s = prof.snapshot;
-  const e = s.energy;
-  const demoNote = DEMO
-    ? `<div class="banner banner--warn">Demo data — these targets are a captured engine snapshot (generated ${escapeHtml(DEMO_FIXTURE?.meta?.generated || 'unknown')}), not a computation from the values you entered.</div>`
-    : '';
-  el.innerHTML = `
-    ${demoNote}
-    <div class="rangeband">
-      <div class="target" style="left:0;right:0"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between" class="num">
-      <span style="color:var(--ink-faint)">target band</span>
-      <span><b style="font-size:var(--txt-xl)">${e.range.lo.toLocaleString()}–${e.range.hi.toLocaleString()}</b> kcal/day</span>
-    </div>
-    ${provLine({ ...e.provenance, basis: e.basis, basisCode: e.basisCode }, e.auto)}
-    <div class="macrobars">
-      <div class="macrorow"><span class="name">Protein</span><div class="track"><div class="bar" style="width:60%;background:linear-gradient(90deg,#2e8b57,#5eb894)"></div></div><span class="vals num"><b>${s.macros.protein.value} g</b></span></div>
-      <div class="macrorow"><span class="name">Carbs</span><div class="track"><div class="bar" style="width:45%;background:linear-gradient(90deg,#b8860b,#d4a853)"></div></div><span class="vals num"><b>${s.macros.carbohydrate.value} g</b></span></div>
-      <div class="macrorow"><span class="name">Fat</span><div class="track"><div class="bar" style="width:52%;background:linear-gradient(90deg,#4a5568,#7a8794)"></div></div><span class="vals num"><b>${s.macros.fat.lo}–${s.macros.fat.hi}% energy</b></span></div>
-    </div>
-    <table class="nut-table">
-      <tr><th>Nutrient</th><th class="num">Target</th><th class="num">UL</th></tr>
-      ${s.nutrients.slice(0, 8).map((n) => `
-        <tr>
-          <td>${escapeHtml(n.name)}</td>
-          <td class="num">${n.value.toLocaleString()} ${escapeHtml(n.unit)} <span style="color:var(--ink-faint)">(${escapeHtml(n.type)})</span></td>
-          <td class="num" style="color:var(--ink-faint)">${n.ul ? n.ul.toLocaleString() + ' ' + escapeHtml(n.unit) : '—'}</td>
-        </tr>`).join('')}
-    </table>
-  `;
-}
-
-/* ============================================================
-   SCREEN A (revisit): PROFILE — was called by route() but never defined,
-   throwing a ReferenceError on every #/profile navigation. The wizard
-   markup is static; this keeps it in sync with saved state.
-   ============================================================ */
-function syncChips(containerId, attr, value) {
-  document.querySelectorAll(`#${containerId} .chip`).forEach((c) => {
-    c.classList.toggle('selected', String(c.dataset[attr] ?? '') === String(value ?? ''));
-  });
-}
-
-/** Prefill the wizard from the saved inputs so edits start from current
-    values instead of hard-coded defaults. No-op for demo profiles (the
-    fixture carries no inputs). */
-function prefillWizard(prof) {
-  const i = prof?.inputs;
-  if (!i) return;
-  const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== '') el.value = v; };
-  set('pAge', i.ageYears); set('pHeight', i.heightCm); set('pWeight', i.weightKg);
-  set('pPal', i.pal); set('pGoal', i.goal); set('pStandards', i.standards);
-  if (i.bodyFatFraction != null) set('pBf', Math.round(i.bodyFatFraction * 100));
-  if (i.sex) { wizardState.sex = i.sex; syncChips('pSexChips', 'sex', i.sex); }
-  wizardState.repro = i.reproState || '';
-  syncChips('pReproChips', 'repro', wizardState.repro);
-}
-
-function showSavedProfile() {
-  const prof = store.getProfile();
-  if (!prof) return;
-  editingProfile = false;
-  document.getElementById('profileWizard').style.display = 'none';
-  const saved = document.getElementById('profileSaved');
-  saved.style.display = 'block';
-  saved.innerHTML = `
-    <div class="card">
-      <div class="card-title">Profile saved · v${escapeHtml(prof.version)}</div>
-      <p>Your targets are computed from age/sex/life-stage + EER2023. Energy shown as a range (±SEPV).</p>
-      <div class="banner banner--warn">Editing any field later bumps the version and recomputes — review before continuing.</div>
-      <a class="btn btn--primary" href="#/today" style="text-decoration:none;display:inline-block">Go to Today →</a>
-      <button class="btn btn--ghost" id="pEdit2">Edit fields</button>
-    </div>`;
-  document.getElementById('pEdit2').addEventListener('click', () => {
-    editingProfile = true;
-    prefillWizard(prof);
-    document.getElementById('profileWizard').style.display = 'block';
-    saved.style.display = 'none';
-    showWStep(0);
-  });
-}
-
-function renderProfile() {
-  const prof = store.getProfile();
-  if (prof && editingProfile) return; // don't yank an in-progress edit
-  if (prof) { showSavedProfile(); return; }
-  document.getElementById('profileWizard').style.display = 'block';
-  document.getElementById('profileSaved').style.display = 'none';
-}
-
-function numField(id) {
-  const v = +document.getElementById(id).value;
-  return Number.isFinite(v) ? v : NaN;
-}
-/** Field-level validation before the compute call — a cleared number input
-    reads as NaN/0 and would otherwise be sent to the API as age 0. */
-function validateProfileInputs() {
-  const problems = [];
-  const age = numField('pAge'), h = numField('pHeight'), w = numField('pWeight');
-  const bfRaw = document.getElementById('pBf').value.trim();
-  if (!Number.isFinite(age) || age < 1 || age > 120) problems.push('Age must be between 1 and 120.');
-  if (!Number.isFinite(h) || h < 80 || h > 250) problems.push('Height must be between 80 and 250 cm.');
-  if (!Number.isFinite(w) || w < 20 || w > 400) problems.push('Weight must be between 20 and 400 kg.');
-  if (bfRaw !== '') {
-    const bf = +bfRaw;
-    if (!Number.isFinite(bf) || bf < 3 || bf > 60) problems.push('Body fat must be between 3 and 60%.');
-  }
-  return problems;
-}
-
-/* ============================================================
-   SCREEN B: TODAY
-   ============================================================ */
-function kcalToday() {
-  const today = localDate();
-  return store.getEntries().filter((e) => e.date === today).reduce((s, e) => s + e.kcal, 0);
-}
-
-function renderToday() {
-  const prof = store.getProfile();
-  const energyEl = document.getElementById('todayEnergy');
-  const macroEl = document.getElementById('todayMacros');
-  const tickEl = document.getElementById('todayTicker');
-  renderTodayLog();
-  macroEl.hidden = !prof;
-
-  if (!prof) {
-    energyEl.innerHTML = '<div class="empty"><div class="big">◉</div><p>Set up your profile to see targets.</p><a class="btn btn--primary" href="#/profile" style="text-decoration:none;display:inline-block;margin-top:var(--sp-3)">Create profile</a></div>';
-    macroEl.innerHTML = '';
-    tickEl.innerHTML = '<div class="empty">Set up your profile to see adequacy targets. Food entries are saved separately in your log.</div>';
-    return;
-  }
-
-  const s = prof.snapshot;
-  const e = s.energy;
-  const kcal = kcalToday();
-  // Range band: position the fill against a nominal 0..hi+slack scale.
-  const scaleMax = e.range.hi * 1.15;
-  const pct = Math.min((kcal / scaleMax) * 100, 100);
-  const tLo = (e.range.lo / scaleMax) * 100;
-  const tW = ((e.range.hi - e.range.lo) / scaleMax) * 100;
-
-  energyEl.innerHTML = `
-    <div class="card-title">Energy today</div>
-    <div class="rangeband">
-      <div class="target" style="left:${tLo}%;width:${tW}%"></div>
-      <div class="fill" style="left:0;width:${Math.max(pct, 1)}%"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between" class="num">
-      <span><b style="font-size:var(--txt-2xl)">${kcal.toLocaleString()}</b> kcal</span>
-      <span style="color:var(--ink-faint);align-self:flex-end">band ${e.range.lo.toLocaleString()}–${e.range.hi.toLocaleString()}</span>
-    </div>
-    ${provLine({ ...e.provenance, basis: e.basis, basisCode: e.basisCode }, e.auto)}`;
-
-  // Macros — g + %energy from logged entries (derived: kcal split estimate).
-  const entries = store.getEntries();
-  const todayEntries = entries.filter((en) => en.date === localDate());
-  const pG = todayEntries.reduce((s2, en) => s2 + (en.macros?.protein || 0), 0);
-  const cG = todayEntries.reduce((s2, en) => s2 + (en.macros?.carbs || 0), 0);
-  const fG = todayEntries.reduce((s2, en) => s2 + (en.macros?.fat || 0), 0);
-  const pT = s.macros.protein.value, cT = s.macros.carbohydrate.value;
-  const pP = pT ? Math.min((pG / pT) * 100, 100) : 0;
-  const cP = cT ? Math.min((cG / cT) * 100, 100) : 0;
-  macroEl.innerHTML = `
-    <div class="card-title">Macros · g + %energy</div>
-    <div class="macrobars">
-      <div class="macrorow"><span class="name">Protein</span><div class="track"><div class="bar" style="width:${pP}%;background:linear-gradient(90deg,#2e8b57,#5eb894)"></div></div><span class="vals num"><b>${pG} g</b> · ${pT} g target</span></div>
-      <div class="macrorow"><span class="name">Carbs</span><div class="track"><div class="bar" style="width:${cP}%;background:linear-gradient(90deg,#b8860b,#d4a853)"></div></div><span class="vals num"><b>${cG} g</b> · ${cT} g target</span></div>
-      <div class="macrorow"><span class="name">Fat</span><div class="track"><div class="bar" style="width:50%;background:linear-gradient(90deg,#4a5568,#7a8794)"></div></div><span class="vals num"><b>${fG} g</b> · ${s.macros.fat.lo}–${s.macros.fat.hi}%</span></div>
-    </div>
-    <div class="prov prov--auto">▲ auto · logged entries vs profile targets · estimates</div>`;
-
-  // Adequacy ticker — reads LOCAL aggregates, offline from first paint.
-  const agg = store.getAggregates()[7];
-  tickEl.innerHTML = agg && agg.nutrients.length
-    ? agg.nutrients
-        .filter((n) => ['calcium', 'iron', 'vitamin_c', 'protein', 'folate'].includes(n.id))
-        .slice(0, 5)
-        .map((n) => {
-          const prov = escapeHtml(encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode })));
-          return `
-          <div class="adeq-row">
-            <div class="left">
-              <div>
-                <div class="name">${escapeHtml(n.name)}</div>
-                <div class="sub num">${escapeHtml(n.pctTarget)}% of ${escapeHtml(n.targetType)} ${escapeHtml(n.target)} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
-              </div>
-            </div>
-            ${adequacyPill(n.status)}
-          </div>`;
-        }).join('')
-    : '<div class="empty">Log a few days to start your adequacy bands.</div>';
-
-
-}
-
-function renderTodayLog() {
-  const logEl = document.getElementById('todayLog');
-  const todayEntries = store.getEntries().filter((entry) => entry.date === localDate());
-  // Today's log entries.
-  // Demo mode: the fixture is date-stamped (e.g. 2026-08-23..29) — the
-  // reviewer's "today" won't match, so cue that explicitly instead of a bare
-  // "0 kcal" with no explanation (shayba polish item).
-  const demoRange = DEMO && DEMO_FIXTURE?.entries?.length
-    ? `${DEMO_FIXTURE.entries[0]} → ${DEMO_FIXTURE.entries[DEMO_FIXTURE.entries.length - 1]}`
-    : null;
-  logEl.innerHTML = todayEntries.length
-    ? todayEntries.map((en) => `
-        <div class="entry">
-          <div>
-            <div class="food">${escapeHtml(en.food)}</div>
-            <div class="detail">${escapeHtml(en.method || 'manual')} · 1 serving · ${tierBadge(en.tier)}</div>
-          </div>
-          <span class="kcal num">${en.kcal.toLocaleString()} kcal</span>
-          <button class="entry-del" data-del="${en.id}" aria-label="Delete entry" title="Delete entry">✕</button>
-        </div>`).join('')
-    : demoRange
-      ? `<div class="empty">Demo data covers <b>${demoRange}</b> — today's date isn't in that window, so 0 kcal here is expected. <a href="#/log">Log against it →</a></div>`
-      : '<div class="empty">No entries yet today. <a href="#/log">Add one →</a></div>';
-}
-
-/* ============================================================
-   SCREEN C: LOG — form functional, others stubbed behind tiers
-   ============================================================ */
-let logTier = 'weighed';
-
-function switchTab(name) {
-  // Scoped to the log screen — the adequacy window tabs manage their own
-  // .active state via the [data-win] handler.
-  document.querySelectorAll('#screen-log .tab[data-tab]').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
-  document.querySelectorAll('#screen-log .tabpane').forEach((p) => {
-    p.style.display = p.dataset.pane === name ? 'block' : 'none';
-  });
-}
-
-/* ============================================================
-   SCREEN D: ADEQUACY
-   ============================================================ */
-let adeqWin = 7;
-function renderAdequacy() {
-  const prof = store.getProfile();
-  const el = document.getElementById('adeqList');
-  if (!prof) {
-    el.innerHTML = '<div class="empty"><div class="big">▤</div><p>Create a profile to see adequacy targets.</p></div>';
-    return;
-  }
-  const agg = store.getAggregates()[adeqWin];
-  if (!agg || !agg.nutrients.length) {
-    el.innerHTML = '<div class="empty">No logged days yet — adequacy needs sustained data.</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-3)">
-      <span class="num" style="color:var(--ink-faint)">${agg.loggingDays} logging days · MAR ${agg.mar ?? '—'}</span>
-      <span class="num" style="color:var(--ink-faint)">${agg.windowDays}-day rolling</span>
-    </div>
-    <div class="adeq-grid">
-    ${agg.nutrients.map((n) => {
-      const prov = escapeHtml(encodeURIComponent(JSON.stringify({ basis: n.basis, target: n.target, unit: n.unit, ear: n.ear, basisCode: n.basisCode })));
-      return `
-      <div class="adeq-row">
-        <div class="left">
-          <div>
-            <div class="name">${escapeHtml(n.name)}</div>
-            <div class="sub num">${escapeHtml(n.pctTarget)}% of ${escapeHtml(n.targetType)} ${escapeHtml(n.target)} ${escapeHtml(n.unit)}${n.ear ? ' · EAR ' + escapeHtml(n.ear) : ''} <button class="whybtn" data-prov='${prov}'>why this number?</button></div>
-          </div>
-        </div>
-        ${adequacyPill(n.status)}
-      </div>`;
-    }).join('')}
-    </div>`;
-}
-
-function storageAvailable() {
+function save(next, message) {
   try {
-    const probe = '__nutrak_probe__';
-    localStorage.setItem(probe, probe);
-    localStorage.removeItem(probe);
+    state = store.save(next);
+    unsavedWarning = "";
+    notice();
+    if (message) toast(message);
+    render();
     return true;
-  } catch {
-    return false;
+  } catch (e) {
+    try {
+      state = NutrakStore.validate(next);
+      unsavedWarning =
+        e.message +
+        " Your changes remain in this tab’s memory only. Export a backup now to keep them.";
+      render();
+      notice();
+      toast("Kept in this tab only. Export a backup to retain these changes.");
+      return true;
+    } catch {
+      notice(e.message);
+      return false;
+    }
   }
 }
-
-/* ============================================================
-   INIT
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', async () => {
-  // Register service worker.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
-
-  // Router.
-  window.addEventListener('hashchange', route);
-  route();
-
-  // Profile wizard wiring.
-  document.getElementById('pSexChips').addEventListener('click', (ev) => {
-    const b = ev.target.closest('.chip'); if (!b) return;
-    wizardState.sex = b.dataset.sex;
-    document.querySelectorAll('#pSexChips .chip').forEach((c) => c.classList.toggle('selected', c === b));
+function notice(
+  text = unsavedWarning || externalChangeWarning || store.error(),
+) {
+  $("#storageNotice").hidden = !text;
+  $("#storageNotice").textContent = text || "";
+}
+function toast(text, action = false) {
+  const el = $("#toast");
+  el.innerHTML =
+    esc(text) + (action ? ' <button id="undoButton">Undo</button>' : "");
+  el.hidden = false;
+  if (action)
+    $("#undoButton").onclick = () => {
+      if (undo && save(undo, "Entry restored.")) undo = null;
+    };
+  setTimeout(() => {
+    el.hidden = true;
+  }, 8000);
+}
+function dialog(title, html) {
+  cancelBarcode();
+  $("#dialogTitle").textContent = title;
+  $("#dialogBody").innerHTML = html;
+  $("#infoDialog").showModal();
+}
+function sourceLinks(sources) {
+  return (sources || [])
+    .filter((s) => /^https?:\/\//i.test(s.url || ""))
+    .map(
+      (s) =>
+        `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.name || "Reference")} ↗</a>`,
+    )
+    .join("");
+}
+function explain(item) {
+  dialog(
+    item.name || "Your energy estimate",
+    `<p>${esc(item.explanation || item.basis || "A population reference, not a measurement of your personal requirement.")}</p>${item.ul ? `<p>Upper level: ${fmt(item.ul)} ${esc(item.unit)}. ${esc(item.ulScope || "")}</p>` : ""}<div class="source-links">${sourceLinks(item.sources)}</div>`,
+  );
+}
+function heading(kicker, title, sub, action = "") {
+  return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1><p class="subtitle">${sub}</p></div>${action}</div>`;
+}
+function dateControl() {
+  return `<label class="date-control"><span>Journal date</span><input type="date" id="journalDate" value="${selectedDate}"></label>`;
+}
+function energyHistory() {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(selectedDate + "T12:00:00");
+    d.setDate(d.getDate() - 6 + i);
+    const date = localDate(d),
+      list = state.entries.filter((e) => e.date === date),
+      t = total("energy_kcal", list);
+    return { date, ...t };
   });
-  document.getElementById('pReproChips').addEventListener('click', (ev) => {
-    const b = ev.target.closest('.chip'); if (!b) return;
-    wizardState.repro = b.dataset.repro || '';
-    document.querySelectorAll('#pReproChips .chip').forEach((c) => c.classList.toggle('selected', c === b));
-  });
-  document.getElementById('pNext1').addEventListener('click', () => showWStep(1));
-  document.getElementById('pBack0').addEventListener('click', () => showWStep(0));
-  document.getElementById('pNext2').addEventListener('click', async () => {
-    const problems = validateProfileInputs();
-    const errEl = document.getElementById('pErr2');
-    if (problems.length) {
-      errEl.hidden = false;
-      errEl.textContent = problems.join(' ');
-      return;
+  const max = Math.max(1, ...days.map((d) => d.value));
+  return days
+    .map(
+      (d) =>
+        `<div class="history-day" title="${d.date}: ${d.known ? fmt(d.value) + " kcal known" + (d.unknown ? " · partial nutrient data" : "") : "no known energy"}"><span class="history-bar ${d.known ? "" : "missing"}" style="height:${d.known ? Math.max(3, (d.value / max) * 78) : 2}px"></span><small>${d.known ? fmt(d.value) : "—"}</small><b>${d.date.slice(8)}</b></div>`,
+    )
+    .join("");
+}
+function renderToday() {
+  const p = profile(),
+    list = entries(),
+    energy = total("energy_kcal");
+  $("#screen-today").innerHTML =
+    heading(
+      "A LITTLE CLARITY, EVERY DAY",
+      selectedDate === localDate()
+        ? "Your day, in perspective."
+        : "Your journal, in perspective.",
+      "Build a picture of what nourishes you. One honest entry at a time.",
+      dateControl(),
+    ) +
+    `<div class="dashboard"><article class="card energy-card"><div class="card-head"><h2>Energy intake</h2><span class="badge">${list.length ? "LOGGED TODAY" : "YOUR STARTING POINT"}</span></div><div class="energy-number">${energy.known ? fmt(energy.value) : list.length ? "—" : "0"} <span>kcal</span></div><p class="muted">${energy.unknown ? `${energy.unknown} entries have unknown energy. ` : ""}${p?.energy ? `Estimate ± model error <b>${fmt(p.energy.range.lo)}–${fmt(p.energy.range.hi)} kcal</b>` : "Create a profile to calculate an estimated daily range."}</p><div class="energy-track"><div style="width:${p?.energy ? Math.min(100, (energy.value / (p.energy.range.hi * 1.15)) * 100) : 0}%"></div>${p?.energy ? `<span style="left:${(p.energy.range.lo / (p.energy.range.hi * 1.15)) * 100}%;width:${((p.energy.range.hi - p.energy.range.lo) / (p.energy.range.hi * 1.15)) * 100}%"></span>` : ""}</div><div class="track-label"><span>0 kcal</span><span>${p?.energy ? "Estimate ± model error ▧" : "Your journal starts here"}</span></div>${p?.energy ? '<button class="text-button" id="energyWhy">How is this estimated? ↗</button>' : '<a class="text-button" href="#/profile">Set up your profile →</a>'}</article><article class="card macro-card"><div class="card-head"><h2>The macronutrients</h2><span class="muted">Known amounts</span></div>${[
+      "protein",
+      "carbohydrate",
+      "fat",
+    ]
+      .map((id, i) => {
+        const t = total(id);
+        const max = p?.energy?.center / (id === "fat" ? 9 : 4) || 100;
+        return `<div class="macro"><div><span class="macro-dot color-${i}"></span>${names[id][0]}<b>${t.known ? fmt(t.value) : "—"} <small>g</small></b></div><div class="bar"><span class="color-${i}" style="width:${Math.min(100, (t.value / max) * 100)}%"></span></div><small>${t.unknown ? `${t.unknown} entries missing this value` : t.known ? "From your logged food" : "Add food to see your intake"}</small></div>`;
+      })
+      .join(
+        "",
+      )}<p class="fine">Bar length represents the share of your estimated energy, not a prescribed macro target.</p></article><article class="card journal-card"><div class="card-head"><div><p class="eyebrow">THE DAILY RECORD</p><h2>Food journal <span class="count">${list.length}</span></h2></div><a class="button primary" href="#/log">＋ Add food</a></div>${list.length ? `<div class="entry-list">${list.map((e) => `<div class="entry"><span class="food-mark">${e.tier === "photo" ? "◈" : "◌"}</span><div class="entry-copy"><h3>${esc(e.food)}</h3><p><span class="tier ${["photo", "text"].includes(e.tier) ? "estimate" : ""}">${esc(e.tier === "form" ? "Manual" : e.tier)}${["photo", "text"].includes(e.tier) ? " · estimate" : ""}</span> <span>${esc(e.method)}</span></p></div><b>${fmt(e.kcal)} <small>kcal</small></b><button class="icon-button" data-edit="${esc(e.id)}" aria-label="Edit ${esc(e.food)}">✎</button><button class="icon-button" data-delete="${esc(e.id)}" aria-label="Delete ${esc(e.food)}">×</button></div>`).join("")}</div>` : `<div class="empty-state"><span class="empty-icon">◒</span><h3>A fresh page for your day.</h3><p>Log a food you know, weigh something from the catalog,<br>or review an estimate before adding it.</p><a href="#/log" class="button secondary">Log your first food →</a></div>`}<div class="complete-row"><label><input type="checkbox" id="completeDay" ${state.completeDays.includes(selectedDate) ? "checked" : ""}> I have finished logging this day</label><span>Complete days make comparisons more meaningful.</span></div></article><article class="insight-card"><span class="eyebrow">A BETTER PICTURE, OVER TIME</span><h2>Patterns need more than a day.</h2><p>See what your records support, what is missing, and how reference values are used.</p><a href="#/adequacy" class="text-button">Explore your patterns →</a><div class="mini-chart" aria-label="Logged energy over the last seven days">${energyHistory()}</div><p class="fine">Last 7 days · known energy only. A dash means no known amount.</p></article></div>`;
+  $("#journalDate").onchange = (e) => {
+    if (e.target.value) {
+      selectedDate = e.target.value;
+      render();
     }
-    errEl.hidden = true;
-    const body = buildProfileRequest();
-    try {
-      // Compute via API — response carries the REAL userId + version + changed.
-      const data = await api('/api/profile', { method: 'POST', body: JSON.stringify(body) });
-      // Persist the inputs too — edits prefill from current values, and
-      // re-save upserts the same userId lineage (P0-1), never orphans.
-      store.setProfile({ userId: data.userId, version: data.version, changed: data.changed, snapshot: data.snapshot, inputs: body });
-      showWStep(2);
-      renderResult();
-      renderToday();
-    } catch {
-      setSync(DEMO ? 'demo' : 'offline');
-      document.getElementById('pResult').innerHTML = NO_DEMO_DATA
-        ? '<div class="empty">This deployed build has no live server behind it, and its demo data did not load — so targets cannot be computed here. It is a front-end demo: run the API locally (see the README) or add <code>?api=https://your-api</code> to point it at a real backend.</div>'
-        : '<div class="empty">API offline — profile needs the server for first compute.</div>';
-    }
-  });
-  document.getElementById('pSave').addEventListener('click', () => {
-    showSavedProfile();
-    sync();
-  });
-  document.getElementById('pEdit').addEventListener('click', () => {
-    editingProfile = true;
-    prefillWizard(store.getProfile());
-    showWStep(0);
-  });
-
-  // Log wiring.
-  // Log tabs only — scoped to #screen-log. The adequacy window tabs
-  // ([data-win]) have their own handler; a global '.tab' listener here
-  // fired switchTab(undefined) on 7d/30d clicks and hid every log pane.
-  document.querySelectorAll('#screen-log .tab[data-tab]').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
-  document.getElementById('fTierChips').addEventListener('click', (ev) => {
-    const b = ev.target.closest('.chip'); if (!b) return;
-    logTier = b.dataset.tier;
-    document.querySelectorAll('#fTierChips .chip').forEach((c) => c.classList.toggle('selected', c === b));
-  });
-  /** Inline form error: shows msg in elId, returns false when invalid. */
-  function fieldError(elId, msg) {
-    const el = document.getElementById(elId);
-    el.hidden = !msg;
-    el.textContent = msg || '';
-    return !msg;
-  }
-  document.getElementById('fAdd').addEventListener('click', () => {
-    const food = document.getElementById('fFood').value.trim();
-    const kcal = +document.getElementById('fKcal').value;
-    const msg = !food ? 'Name the food first.'
-      : (!Number.isFinite(kcal) || kcal <= 0) ? 'Energy must be a positive number.'
-      : '';
-    if (!fieldError('fErr', msg)) return;
-    store.addEntry({ id: Date.now(), date: localDate(), food, kcal, tier: logTier, method: 'form' });
-    document.getElementById('fFood').value = '';
-    document.getElementById('fKcal').value = '';
-    renderToday();
-    location.hash = '#/today';
-  });
-
-  // Delete a mis-logged entry (delegated — rows re-render on every change).
-  document.getElementById('todayLog').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-del]');
-    if (!b) return;
-    store.removeEntry(b.dataset.del);
-    renderToday();
-  });
-
-  // Photo tab — the non-negotiable contract.
-  document.getElementById('pSimulate').addEventListener('click', () => {
-    document.getElementById('photoDrop').style.display = 'none';
-    document.getElementById('photoEstimate').style.display = 'block';
-  });
-  document.getElementById('phConfirm').addEventListener('click', () => {
-    const food = document.getElementById('phFood').value.trim();
-    const kcal = +document.getElementById('phKcal').value;
-    const msg = !food ? 'Name the food first.'
-      : (!Number.isFinite(kcal) || kcal <= 0) ? 'Energy must be a positive number.'
-      : '';
-    if (!fieldError('phErr', msg)) return;
-    store.addEntry({ id: Date.now(), date: localDate(), food, kcal, tier: 'photo', method: 'photo' });
-    document.getElementById('photoEstimate').style.display = 'none';
-    document.getElementById('photoDrop').style.display = 'block';
-    renderToday();
-    location.hash = '#/today';
-  });
-  document.getElementById('phDiscard').addEventListener('click', () => {
-    document.getElementById('photoEstimate').style.display = 'none';
-    document.getElementById('photoDrop').style.display = 'block';
-  });
-
-  // Barcode / free-text: no lookup engine ships in this build. These controls
-  // previously did nothing at all on click — an inert button with no feedback
-  // reads as broken, not as "not yet".
-  document.getElementById('bLookup').addEventListener('click', () => {
-    const code = document.getElementById('bCode').value.trim();
-    document.getElementById('bResult').textContent = code
-      ? `Barcode lookup is not part of this build — no product database is bundled or configured, so "${code}" cannot be resolved here. Log the food on the Form tab instead.`
-      : 'Barcode lookup is not part of this build. Enter a code to see how it would be handled, or log the food on the Form tab.';
-  });
-  document.getElementById('tParse').addEventListener('click', () => {
-    document.getElementById('tResult').textContent = 'Free-text parsing is not part of this build — it needs the server-side parser this deployment does not have. Log the food on the Form tab instead.';
-  });
-
-  // Adequacy window toggle.
-  document.querySelectorAll('[data-win]').forEach((t) => t.addEventListener('click', () => {
-    adeqWin = +t.dataset.win;
-    document.querySelectorAll('[data-win]').forEach((x) => x.classList.toggle('active', x === t));
-    renderAdequacy();
-  }));
-
-  // Provenance popover — user directive: words + simple math, never code.
-  // The raw provenance object is NOT rendered; basis_templates (glossary.json)
-  // explain the machine basis string in plain language.
-  document.addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-prov]');
-    if (b) {
-      const p = JSON.parse(decodeURIComponent(b.dataset.prov));
-      document.getElementById('provTitle').textContent = 'Why this number?';
-      document.getElementById('provBody').innerHTML = renderExplanation(p);
-      document.getElementById('provPop').classList.add('open');
-      return;
-    }
-    // Glossary term click → expandable definition panel (azaraki: not hover).
-    const term = ev.target.closest('[data-term]');
-    if (term) {
-      const def = document.getElementById('glossDef');
-      const t = (GLOSSARY?.terms || []).find((x) => x.term === term.dataset.term);
-      if (!t) return;
-      if (def.dataset.term === t.term && def.classList.contains('open')) {
-        def.classList.remove('open');
-        return;
+  };
+  $("#completeDay").onchange = (e) =>
+    save(
+      {
+        ...state,
+        completeDays: e.target.checked
+          ? [...new Set([...state.completeDays, selectedDate])]
+          : state.completeDays.filter((d) => d !== selectedDate),
+      },
+      "Day status saved.",
+    );
+  if ($("#energyWhy")) $("#energyWhy").onclick = () => explain(p.energy);
+}
+function nutrientFields(n = {}) {
+  return `<div class="form-grid">${Object.entries(names)
+    .map(
+      ([id, [name, unit]]) =>
+        `<label>${name} <span class="muted">${unit}</span><input type="number" name="${id}" min="0" max="100000000" step="any" value="${Number.isFinite(n[id]) ? n[id] : ""}" placeholder="Unknown"></label>`,
+    )
+    .join("")}</div>`;
+}
+function reviewDraft(item, tier = "form", id = null, batchIndex = null) {
+  draft = { tier, id };
+  dialog(
+    id ? "Edit food entry" : "Review before adding",
+    `<p class="muted">Check the portion and every estimate. Leave unavailable nutrients blank; unknown is never treated as zero.</p>${item.source ? `<p class="fine">Source: ${esc(item.source.title || item.source.name || "Food source")} ${item.source.url ? sourceLinks([{ ...item.source, title: item.source.title || item.source.name || "Source" }]) : ""} ${esc(item.source.note || "")}</p>` : ""}<form id="entryForm"><label>Food name<input name="food" value="${esc(item.name || item.food || "")}" required maxlength="500"></label><label>Date<input name="date" type="date" required value="${esc(item.date || selectedDate)}"></label>${Number.isFinite(item.grams) ? `<label>Whole portion · grams<input id="editGrams" type="number" min="0.1" max="10000" step="any" value="${item.grams}"></label><p class="fine">Changing weight rescales every known nutrient below. Values describe the whole portion.</p>` : ""}<details ${tier === "form" ? "open" : ""}><summary>Nutrition for this whole entry · edit values</summary>${nutrientFields(item.nutrients || {})}</details><div class="notice">${tier === "photo" ? "Photo estimates can miss ingredients, quantities and preparation. These values have not been measured." : tier === "text" ? "Text matching finds catalog foods, but does not verify the food or portion." : "Values apply to the whole entry, not per 100 g."}</div><p class="form-error" id="entryError" role="alert"></p><button class="button primary" type="submit">${id ? "Save changes" : "Confirm & add to journal"}</button></form>`,
+  );
+  if ($("#editGrams")) {
+    let previous = item.grams;
+    $("#editGrams").onchange = (e) => {
+      const grams = +e.target.value;
+      if (grams > 0 && Number.isFinite(grams)) {
+        for (const k of Object.keys(names)) {
+          const input = $("#entryForm").elements[k];
+          if (input.value !== "")
+            input.value = +((Number(input.value) * grams) / previous).toFixed(
+              4,
+            );
+        }
+        previous = grams;
       }
-      def.dataset.term = t.term;
-      def.classList.add('open');
-      def.innerHTML = `<div class="gloss-def-head"><b>${escapeHtml(t.term)}</b>${t.short ? ` — ${escapeHtml(t.short)}` : ''}</div>${t.long ? `<div class="gloss-def-long">${escapeHtml(t.long)}</div>` : ''}${t.simple_math ? `<div class="gloss-def-math">${escapeHtml(t.simple_math)}</div>` : ''}`;
+    };
+  }
+  $("#entryForm").onsubmit = (e) => {
+    e.preventDefault();
+    try {
+      const f = new FormData(e.target),
+        n = {};
+      Object.keys(names).forEach((k) => {
+        if (f.get(k) !== "") n[k] = Number(f.get(k));
+      });
+      const en = NutrakStore.entry({
+        id: id || crypto.randomUUID(),
+        date: f.get("date"),
+        food: f.get("food"),
+        nutrients: n,
+        kcal: n.energy_kcal,
+        tier,
+        source: item.source
+          ? {
+              ...item.source,
+              ...(f.get("food") !== (item.name || item.food || "") ||
+              Object.keys(names).some(
+                (k) => (n[k] ?? null) !== (item.nutrients?.[k] ?? null),
+              )
+                ? {
+                    adjusted: true,
+                    note:
+                      (item.source.note || "") +
+                      " User edited the food or nutrient composition; original source is a starting reference.",
+                  }
+                : {}),
+            }
+          : undefined,
+        grams: $("#editGrams") ? +$("#editGrams").value : item.grams,
+        assumptions: item.assumptions,
+        method:
+          tier === "weighed"
+            ? `${fmt($("#editGrams") ? +$("#editGrams").value : item.grams)} g · catalog`
+            : tier === "photo"
+              ? "Photo estimate reviewed"
+              : tier === "text"
+                ? "Text match reviewed"
+                : tier === "barcode"
+                  ? "Product label · reviewed"
+                  : "Manual entry",
+      });
+      const next = {
+        ...state,
+        entries: id
+          ? state.entries.map((x) => (x.id === id ? en : x))
+          : [...state.entries, en],
+      };
+      if (save(next, "Food saved to your journal.")) {
+        $("#infoDialog").close();
+        if (batchIndex !== null && pendingBatch) {
+          pendingBatch.saved.add(batchIndex);
+          renderBatch();
+          toast("Food added. Review the remaining drafts.");
+        } else location.hash = "#/today";
+      }
+    } catch (err) {
+      $("#entryError").textContent = err.message;
     }
+  };
+}
+function renderLog() {
+  $("#screen-log").innerHTML =
+    heading(
+      "YOUR FOOD, YOUR RECORD",
+      "Make every entry count.",
+      "Choose how to log. You always review the values before they become part of your journal.",
+    ) +
+    `<div class="capture-grid"><article class="card"><p class="eyebrow">01 / KNOW WHAT YOU ATE</p><h2>Food catalog</h2><p class="muted">A small, sourced offline catalog. Weigh your portion for a clearer estimate.</p><label>Find a food<input type="search" id="foodSearch" placeholder="Try apple, banana, orange…"></label><div id="foodResults" class="food-results"></div></article><div class="capture-stack"><article class="card"><p class="eyebrow">02 / FROM A LABEL OR RECIPE</p><h2>Enter nutrition yourself</h2><p class="muted">Add calories, macros and any micronutrients you know. Keep the rest unknown.</p><button class="button secondary" id="manualButton">＋ Add a manual entry</button></article><article class="card"><p class="eyebrow">03 / A QUICK DESCRIPTION</p><h2>Describe your food</h2><label class="sr-only" for="textFood">Food description</label><textarea id="textFood" placeholder="150 g apple, 100 g banana"></textarea><p class="fine">Matches known catalog foods and explicit gram amounts locally. No AI request.</p><button class="button secondary" id="parseButton">Find matches →</button><div id="textResult" aria-live="polite"></div></article></div><article class="card photo-card"><div><p class="eyebrow">04 / START WITH A PHOTO</p><h2>A picture is a starting point.</h2><p class="muted">Use your own OpenAI API key to suggest foods and portions. Review every estimate. Image recognition is optional and uses a paid external service.</p><label>OpenAI API key <input id="photoKey" type="password" autocomplete="off" placeholder="Kept in memory for this tab only" value="${esc(photoKey)}"></label><label>Meal photo<input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="fine">Only when you press Analyze, this image is sent directly to OpenAI. Nutrak stores neither the image nor your key. Avoid identifying details. <a href="https://platform.openai.com/docs/guides/your-data" target="_blank" rel="noopener">OpenAI data policy ↗</a></p><button class="button primary" id="analyzePhoto" disabled>Analyze photo with OpenAI ↗</button><button class="text-button" id="clearPhoto">Clear image & key</button><p id="photoStatus" role="status"></p></div><div id="photoPreview" class="photo-preview">◈<span>Your photo preview stays here<br>until you choose to send it.</span></div><div id="photoResults"></div></article><article class="card barcode-card"><p class="eyebrow">05 / PACKAGED FOOD</p><h2>Look up a barcode</h2><p class="muted">Optional lookup sends the barcode to Open Food Facts. Product labels can be incomplete; check the package.</p><div class="inline-form"><label class="grow">Barcode<input id="barcode" inputmode="numeric" placeholder="Enter product barcode"></label><button class="button secondary" id="barcodeButton">Look up ↗</button></div><p id="barcodeStatus" role="status"></p></article></div>`;
+  const results = () => {
+    $("#foodResults").innerHTML =
+      NutrakFoods.search($("#foodSearch").value)
+        .slice(0, 8)
+        .map(
+          (f) =>
+            `<button class="food-option" data-food="${esc(f.id)}"><span>${esc(f.name)}<small>Offline catalog · per weighed portion</small></span><span>＋</span></button>`,
+        )
+        .join("") ||
+      '<p class="muted">No catalog match. Use manual entry for this food.</p>';
+  };
+  results();
+  $("#foodSearch").oninput = results;
+  $("#manualButton").onclick = () => reviewDraft({});
+  $("#parseButton").onclick = () => {
+    const r = NutrakFoods.parseText($("#textFood").value);
+    showMatches(r.items, "#textResult", "text");
+    if (r.unresolved.length)
+      $("#textResult").insertAdjacentHTML(
+        "beforeend",
+        `<p class="notice">${r.unresolved.map((x) => esc(x.text) + ": " + esc(x.reason)).join("<br>")}</p>`,
+      );
+  };
+  $("#barcodeButton").onclick = async () => {
+    cancelBarcode();
+    barcodeController = new AbortController();
+    const generation = barcodeGeneration,
+      signal = barcodeController.signal;
+    const button = $("#barcodeButton");
+    button.disabled = true;
+    try {
+      $("#barcodeStatus").textContent = "Looking up the product…";
+      const f = await NutrakFoods.lookupBarcode($("#barcode").value, {
+        signal,
+      });
+      if (
+        generation !== barcodeGeneration ||
+        !location.hash.startsWith("#/log")
+      )
+        return;
+      $("#barcodeStatus").textContent =
+        "Product found. Review the package and choose a portion.";
+      portion(f, "barcode");
+    } catch (err) {
+      if (generation === barcodeGeneration && !signal.aborted)
+        $("#barcodeStatus").textContent = err.message;
+    } finally {
+      if (generation === barcodeGeneration) {
+        barcodeController = null;
+        button.disabled = false;
+      }
+    }
+  };
+  $("#barcode").oninput = () => cancelBarcode();
+  $("#photoKey").oninput = (e) => {
+    photoKey = e.target.value;
+    photoReady();
+  };
+  $("#photoFile").onchange = async (e) => {
+    cancelPhoto();
+    photoData = null;
+    $("#photoPreview").innerHTML =
+      "◈<span>Preparing your image locally…</span>";
+    $("#photoResults").innerHTML = "";
+    photoReady();
+    const file = e.target.files[0];
+    if (!file) {
+      $("#photoPreview").innerHTML = "◈<span>No image selected.</span>";
+      return;
+    }
+    const generation = photoGeneration;
+    try {
+      const data = await preparePhoto(file);
+      if (generation !== photoGeneration) return;
+      photoData = data;
+      $("#photoPreview").innerHTML =
+        `<img src="${photoData}" alt="Your selected meal, awaiting analysis">`;
+      $("#photoStatus").textContent =
+        "Resized locally to at most 1600 px; metadata removed. Ready to send when you choose.";
+    } catch (err) {
+      if (generation === photoGeneration) {
+        $("#photoStatus").textContent =
+          "Image could not be prepared. " + err.message;
+        $("#photoPreview").innerHTML = "◈<span>Select another image.</span>";
+      }
+    }
+    photoReady();
+  };
+  $("#clearPhoto").onclick = () => {
+    cancelPhoto();
+    photoData = null;
+    photoKey = "";
+    pendingBatch = null;
+    renderLog();
+  };
+  $("#analyzePhoto").onclick = async () => {
+    if (photoController) return;
+    photoController = new AbortController();
+    const generation = photoGeneration,
+      signal = photoController.signal;
+    photoReady();
+    $("#photoStatus").textContent =
+      "Sending this image to OpenAI and preparing estimates…";
+    try {
+      const r = await NutrakPhoto.analyze({
+        apiKey: photoKey,
+        imageDataUrl: photoData,
+        signal,
+      });
+      if (generation !== photoGeneration) return;
+      $("#photoStatus").textContent =
+        [...(r.warnings || []), ...(r.assumptions || [])].join(" ") ||
+        "Estimates ready. Review every food before adding.";
+      showMatches(
+        r.items.map((it) => ({ ...it, assumptions: r.assumptions || [] })),
+        "#photoResults",
+        "photo",
+      );
+    } catch (err) {
+      if (generation === photoGeneration)
+        $("#photoStatus").textContent = err.message;
+    } finally {
+      if (generation === photoGeneration) {
+        photoController = null;
+        photoReady();
+      }
+    }
+  };
+  if (photoData) {
+    $("#photoPreview").innerHTML =
+      `<img src="${photoData}" alt="Your selected meal, awaiting analysis">`;
+    photoReady();
+  }
+}
+function photoReady() {
+  $("#analyzePhoto").disabled =
+    Boolean(photoController) || !(photoKey.trim() && photoData);
+}
+function showMatches(items, selector, tier) {
+  pendingBatch = { items, selector, tier, saved: new Set() };
+  renderBatch();
+}
+function renderBatch() {
+  if (!pendingBatch) return;
+  const { items, selector, tier, saved } = pendingBatch,
+    host = $(selector);
+  if (!host) return;
+  host.innerHTML = items.length
+    ? `<p class="fine">${saved.size} of ${items.length} drafts added. Review each remaining food separately.</p>` +
+      items
+        .map(
+          (it, i) =>
+            `<button class="food-option" data-match="${i}" ${saved.has(i) ? "disabled" : ""}><span>${esc(it.name)}<small>${fmt(it.grams)} g · ${fmt(it.nutrients?.energy_kcal)} kcal · ${saved.has(i) ? "Added to journal" : "review required"}</small></span>${saved.has(i) ? "✓ Added" : "Review →"}</button>`,
+        )
+        .join("")
+    : '<p class="muted">No matches yet. Use an exact catalog food and gram amount, or enter it manually.</p>';
+  host.querySelectorAll("[data-match]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        const i = +b.dataset.match;
+        if (!saved.has(i)) reviewDraft(items[i], tier, null, i);
+      }),
+  );
+}
+function cancelBarcode() {
+  barcodeGeneration++;
+  barcodeController?.abort();
+  barcodeController = null;
+  const button = $("#barcodeButton");
+  if (button) button.disabled = false;
+}
+function cancelPhoto() {
+  photoGeneration++;
+  photoController?.abort();
+  photoController = null;
+}
+async function preparePhoto(file) {
+  if (
+    !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+    file.size > 20 * 1024 * 1024
+  )
+    throw Error("Choose a JPEG, PNG or WebP under 20 MB.");
+  const bitmap = await createImageBitmap(file);
+  try {
+    const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL("image/jpeg", 0.85);
+    NutrakPhoto.validateImage(data);
+    return data;
+  } finally {
+    bitmap.close();
+  }
+}
+function portion(food, tier = "weighed") {
+  dialog(
+    "Choose your portion",
+    `<h3>${esc(food.name)}</h3><p class="muted">Nutrition is scaled from the catalog's per-100 g values. Food composition varies.</p><form id="portionForm"><label>Weight in grams<input id="portionGrams" type="number" min="0.1" max="10000" step="any" required value="100"></label><button class="button primary">Review nutrition →</button></form>`,
+  );
+  $("#portionForm").onsubmit = (e) => {
+    e.preventDefault();
+    const item = NutrakFoods.scale(food, +$("#portionGrams").value);
+    $("#infoDialog").close();
+    reviewDraft(item, tier);
+  };
+}
+function renderAdequacy() {
+  const p = profile();
+  $("#screen-adequacy").innerHTML =
+    heading(
+      "FOLLOW THE EVIDENCE",
+      "Small entries. A bigger picture.",
+      "Nutrient references describe populations. Your records show intake estimates, with limits.",
+    ) +
+    `<div class="period-control"><div><button data-window="7" class="${windowDays === 7 ? "selected" : ""}">7 days</button><button data-window="30" class="${windowDays === 30 ? "selected" : ""}">30 days</button></div><span>Ending ${esc(selectedDate)}</span></div>`;
+  if (!p) {
+    $("#screen-adequacy").innerHTML +=
+      '<article class="card empty-state"><h2>A reference needs a little context.</h2><p>Create an adult profile to compare your journal with supported dietary reference values.</p><a href="#/profile" class="button primary">Create your profile →</a></article>';
+    return;
+  }
+  const a = NutrakEngine.analyze(state.entries, p, {
+    windowDays,
+    endDate: selectedDate,
+    completeDays: state.completeDays,
   });
-  document.getElementById('provClose').addEventListener('click', () => {
-    document.getElementById('provPop').classList.remove('open');
-  });
-
-  // First render: offline-first from local aggregates.
+  $("#screen-adequacy").innerHTML +=
+    `<div class="coverage-grid"><article class="card"><span class="eyebrow">LOGGING COVERAGE</span><strong>${a.observedDays} <small>/ ${windowDays} days</small></strong><p>with at least one food entry</p></article><article class="card"><span class="eyebrow">MARKED COMPLETE</span><strong>${typeof a.completeDays === "number" ? a.completeDays : a.completeDays?.length || 0} <small>days</small></strong><p>you marked as fully logged</p></article><article class="card coverage-note"><h3>Completeness changes the meaning.</h3><p>Observed means include partial logs. Comparable means use only complete days with known values for every entry. Blank nutrients stay unknown.</p></article></div><article class="card"><div class="card-head"><h2>Nutrient reference comparison</h2><span class="badge">${windowDays}-DAY WINDOW</span></div><p class="muted">Below an RDA does not establish inadequacy. Below an AI cannot establish deficiency. Short food records cannot diagnose nutritional status.</p><div class="table-wrap"><table><thead><tr><th>Nutrient</th><th>Observed mean</th><th>Comparable mean</th><th>Reference / day</th><th>Evidence</th></tr></thead><tbody>${a.nutrients.map((n) => `<tr><th><button class="text-button" data-nutrient="${esc(n.id)}">${esc(n.name)} ↗</button><small>${esc(n.unit)}</small></th><td>${fmt(n.observedMean)}<small>Includes partial records</small></td><td>${fmt(n.completeMean ?? n.mean)}<small>${Array.isArray(n.comparableDays) ? n.comparableDays.length : (n.comparableDays ?? 0)} comparable days</small></td><td>${fmt(n.target)} <small>${esc(n.type || n.targetType || "Reference")}</small></td><td><span class="pill">${esc(statusText[n.status] || String(n.status || "Limited data").replaceAll("_", " "))}</span><small>${n.unknownEntries || 0} entries missing value</small><small>${esc({ above_ul: "Above upper level", not_above_ul: "Not above upper level", scope_not_available: "Upper level scope not assessable", not_established: "No upper level established", insufficient_data: "Upper level: insufficient data" }[n.ulStatus] || "")}</small></td></tr>`).join("")}</tbody></table></div></article><div class="notice">${(a.warnings || []).map((w) => esc(typeof w === "string" ? w : w.message)).join(" ") || "A food journal describes estimated intake. It does not measure absorption, individual requirements or clinical status."}</div>`;
+}
+function renderProfile() {
+  const i = state.profile || {};
+  $("#screen-profile").innerHTML =
+    heading(
+      "PERSONAL CONTEXT",
+      "A reference, made relevant.",
+      "A few details help select adult reference values. Your information stays in this browser.",
+    ) +
+    `<div class="profile-layout"><article class="card"><h2>Your reference profile</h2><p class="muted">Supported standards: NASEM dietary reference intakes, as published by Health Canada. Adults 19 and older.</p><form id="profileForm"><div class="form-grid"><label>Age in years<input name="ageYears" type="number" min="19" max="100" required value="${i.ageYears || ""}"></label><label>Sex used in reference tables<select name="sex"><option value="F" ${i.sex === "F" ? "selected" : ""}>Female</option><option value="M" ${i.sex === "M" ? "selected" : ""}>Male</option></select></label><label>Height · cm<input name="heightCm" type="number" min="100" max="250" step="any" required value="${i.heightCm || ""}"></label><label>Weight · kg<input name="weightKg" type="number" min="30" max="350" step="any" required value="${i.weightKg || ""}"></label><label>Physical activity<select name="pal">${[
+      ["inactive", "Inactive"],
+      ["low_active", "Low active"],
+      ["active", "Active"],
+      ["very_active", "Very active"],
+    ]
+      .map(
+        ([v, l]) =>
+          `<option value="${v}" ${i.pal === v ? "selected" : ""}>${l}</option>`,
+      )
+      .join(
+        "",
+      )}</select></label><label>Reproductive state<select name="reproState"><option value="">Neither / not applicable</option><option value="preg" ${i.reproState === "preg" ? "selected" : ""}>Pregnant</option><option value="lact" ${i.reproState === "lact" ? "selected" : ""}>Lactating</option></select></label></div><p class="fine">Activity categories describe habitual daily movement, from mostly seated routines through substantial daily exercise or physical work. Choosing a category does not measure your energy expenditure.</p><p class="fine">Energy equations use age, sex, body size and activity. Pregnancy and lactation need additional clinical context; energy estimates may be withheld. This is not a weight-loss prescription.</p><p id="profileError" class="form-error" role="alert"></p><button class="button primary">Save & calculate locally →</button></form></article><div><article class="card privacy-card"><span class="eyebrow">YOURS TO KEEP</span><h2>Private by design.</h2><p>Food entries and profile data are saved in this browser. No account, background sync or analytics. Other people using this browser profile may be able to access them.</p><p>Browser data can be cleared. Export a backup to keep a copy.</p><button id="exportButton" class="button secondary">↓ Export JSON backup</button>${store.recovery() ? '<button id="recoveryExport" class="button secondary">↓ Export original recovery data</button>' : ""}<label class="import-label">Import a backup<input id="importFile" type="file" accept="application/json,.json"></label><p class="fine">Import replaces your current journal after validation. Export your current data first. Keys and photo bytes are never included.</p><p id="importStatus" role="status"></p></article><article class="profile-summary">${profile() ? `<span class="eyebrow">CURRENT REFERENCE</span><h2>${profile().energy ? fmt(profile().energy.center) + " kcal" : "Energy not calculated"}</h2><p>Estimated daily energy need, not a measured requirement.</p>${(profile().warnings || []).map((w) => `<p>${esc(typeof w === "string" ? w : w.message)}</p>`).join("")}<button class="text-button" id="profileScience">See calculations & limits ↗</button>` : '<span class="eyebrow">NO PROFILE YET</span><h2>Your journal works without a profile.</h2><p>Add food now. Create a profile whenever you want reference comparisons.</p>'}</article></div></div>`;
+  $("#profileForm").onsubmit = (e) => {
+    e.preventDefault();
+    try {
+      const f = new FormData(e.target),
+        inputs = {
+          ageYears: +f.get("ageYears"),
+          sex: f.get("sex"),
+          heightCm: +f.get("heightCm"),
+          weightKg: +f.get("weightKg"),
+          pal: f.get("pal"),
+          reproState: f.get("reproState") || null,
+        };
+      const result = NutrakEngine.computeProfile(inputs);
+      if (!result)
+        throw Error(
+          "These inputs are not supported. Check your adult profile.",
+        );
+      save(
+        { ...state, profile: inputs },
+        "Profile calculated and saved locally.",
+      );
+    } catch (err) {
+      $("#profileError").textContent = err.message;
+    }
+  };
+  $("#exportButton").onclick = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {
+        type: "application/json",
+      }),
+      url = URL.createObjectURL(blob),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = `nutrak-backup-${localDate()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  if ($("#recoveryExport"))
+    $("#recoveryExport").onclick = () => {
+      const blob = new Blob([store.recovery()], { type: "application/json" }),
+        url = URL.createObjectURL(blob),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = "nutrak-recovery-original.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+  $("#importFile").onchange = async (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 20 * 1024 * 1024)
+        throw Error("Backup exceeds the 20 MB import limit.");
+      const clean = NutrakStore.validate(JSON.parse(await file.text()));
+      if (clean.profile) NutrakEngine.computeProfile(clean.profile);
+      dialog(
+        "Replace your local journal?",
+        `<p>This validated backup contains ${clean.entries.length} food entries. Import replaces your current ${state.entries.length} entries and profile. Export your current journal first if you need to retain it.</p><button class="button primary" id="confirmImport">Replace with validated backup</button>`,
+      );
+      $("#confirmImport").onclick = () => {
+        if (save(clean, "Backup imported.")) $("#infoDialog").close();
+      };
+    } catch (err) {
+      $("#importStatus").textContent = "Import not applied. " + err.message;
+    }
+  };
+  if ($("#profileScience")) $("#profileScience").onclick = () => sources();
+}
+function sources() {
+  const p = profile();
+  dialog(
+    "The science, and its limits",
+    `<p>Nutrak compares estimated food intake with adult Dietary Reference Intakes (DRIs). References are not personalized prescriptions or clinical findings.</p><h3>Read each reference correctly</h3><p><b>RDA:</b> a daily intake intended to cover nearly all healthy people in a life-stage group. A short record below it does not diagnose inadequate intake.</p><p><b>AI:</b> used when evidence is insufficient for an RDA. Intake below an AI cannot establish inadequacy.</p><p><b>UL:</b> an upper level, not a goal. Some upper levels apply only to supplements or fortified foods, which this journal may not distinguish.</p><p><b>CDRR:</b> an intake level above which reducing intake is expected to reduce chronic disease risk. It is not a minimum target.</p><h3>Energy is an estimate</h3><p>${esc(p?.energy?.explanation || "Adult energy equations use age, sex, height, weight and activity. Actual needs vary. The displayed band communicates uncertainty; it is not a guaranteed physiological range.")}</p><h3>Primary references</h3><div class="source-links">${sourceLinks(p?.energy?.sources)}<a href="https://www.canada.ca/en/health-canada/services/food-nutrition/healthy-eating/dietary-reference-intakes/tables.html" target="_blank" rel="noopener">Health Canada: Dietary Reference Intake tables ↗</a><a href="https://nap.nationalacademies.org/catalog/26818/dietary-reference-intakes-for-energy" target="_blank" rel="noopener">NASEM: Dietary Reference Intakes for Energy (2023) ↗</a></div><h3>Your data stays under your control</h3><p>Basic journaling, profile calculations, catalog matching and comparisons run locally. Barcode lookup contacts Open Food Facts only on request. Photo analysis sends your selected image directly to OpenAI only when you press Analyze. The API key remains in this tab's memory. Export contains only journal and profile data.</p>`,
+  );
+}
+function render() {
   renderToday();
   renderAdequacy();
-  // Glossary for plain-language explanations (user directive: words, not code).
-  try {
-    const gr = await fetch('src/glossary.json', { cache: 'no-store' });
-    if (gr.ok) GLOSSARY = await gr.json();
-  } catch { /* glossary unavailable — explanations fall back to honest note */ }
-  // Demo mode bootstrap (GH Pages): load the captured fixture BEFORE any
-  // sync so first paint uses real engine output, not a dead fetch.
-  // Guard: only on non-local hosts (GH Pages) — localhost:3001 keeps the
-  // live-API dev experience. An explicit `?api=`/`window.NUTRAK_API` override
-  // disables the fixture too: the deployment is then a real client, not a demo.
-  const demoHost = !['127.0.0.1', 'localhost'].includes(location.hostname) && !API_OVERRIDE;
-  if (demoHost) {
-    try {
-      const r = await fetch('demo/fixture.json', { cache: 'no-store' });
-      if (r.ok) {
-        DEMO_FIXTURE = await r.json();
-        DEMO = true;
-        const fp = DEMO_FIXTURE.profile;
-        store.setProfile({ userId: fp.userId, version: fp.version, snapshot: fp.snapshot });
-        store.setAggregates({ 7: DEMO_FIXTURE.adequacy, 30: DEMO_FIXTURE.adequacy });
-        const st = document.getElementById('syncState');
-        if (st) st.textContent = 'demo';
-        // Honest review surface (azaraki): generation time + source visible.
-        const meta = DEMO_FIXTURE.meta || {};
-        const foot = document.getElementById('appFooter');
-        const footText = document.getElementById('footnoteText');
-        if (foot && footText) {
-          footText.textContent = `Demo data · generated ${meta.generated || 'unknown'} · ${meta.source || 'captured from engine'} · standards: ${meta.standards || 'NASEM'}`;
-          foot.hidden = false;
-        }
-      } else {
-        NO_DEMO_DATA = true;
-      }
-    } catch { NO_DEMO_DATA = true; /* not demo — normal offline-first boot */ }
+  renderProfile();
+  notice();
+}
+function route() {
+  const name =
+    (location.hash.match(/^#\/(today|log|adequacy|profile)/) || [])[1] ||
+    "today";
+  if (name !== "log") {
+    cancelBarcode();
+    cancelPhoto();
+    photoData = null;
+    pendingBatch = null;
   }
-  // Storage disabled (private mode, blocked, quota): every store.get/store.set
-  // already fails soft, but without a visible notice nothing would work and
-  // nothing would say why.
-  if (!storageAvailable()) {
-    const foot = document.getElementById('appFooter');
-    const footText = document.getElementById('footnoteText');
-    if (foot && footText) {
-      footText.textContent = 'Local storage is unavailable in this browser session — profile, food log, and adequacy data will not be saved. Check private-browsing mode or site settings.';
-      foot.hidden = false;
-    }
+  document
+    .querySelectorAll(".screen")
+    .forEach((s) => (s.hidden = s.id !== "screen-" + name));
+  document.querySelectorAll("[data-nav]").forEach((a) => {
+    a.classList.toggle("active", a.dataset.nav === name);
+    if (a.dataset.nav === name) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  if (name === "log") renderLog();
+  else if (name === "today") renderToday();
+  else if (name === "adequacy") renderAdequacy();
+  else renderProfile();
+}
+document.addEventListener("click", (e) => {
+  const del = e.target.closest("[data-delete]");
+  if (del) {
+    undo = structuredClone(state);
+    if (
+      save({
+        ...state,
+        entries: state.entries.filter((x) => x.id !== del.dataset.delete),
+      })
+    )
+      toast("Entry deleted.", true);
   }
-  sync();
+  const edit = e.target.closest("[data-edit]");
+  if (edit) {
+    const en = state.entries.find((x) => x.id === edit.dataset.edit);
+    reviewDraft(en, en.tier, en.id);
+  }
+  const food = e.target.closest("[data-food]");
+  if (food)
+    portion(NutrakFoods.catalog.find((f) => f.id === food.dataset.food));
+  const win = e.target.closest("[data-window]");
+  if (win) {
+    windowDays = +win.dataset.window;
+    renderAdequacy();
+  }
+  const n = e.target.closest("[data-nutrient]");
+  if (n) {
+    const p = profile();
+    const item =
+      p &&
+      NutrakEngine.analyze(state.entries, p, {
+        windowDays,
+        endDate: selectedDate,
+        completeDays: state.completeDays,
+      }).nutrients.find((x) => x.id === n.dataset.nutrient);
+    if (item) explain(item);
+  }
 });
+$("#closeDialog").onclick = () => $("#infoDialog").close();
+$("#sourcesButton").onclick = sources;
+$("#footerSources").onclick = sources;
+$("#privacyButton").onclick = () =>
+  dialog(
+    "On your device, by your choice",
+    "<p>Your profile and food journal live in this browser’s local storage. There is no account or background upload. Export a backup to retain your records.</p><p>Optional barcode lookup sends a barcode to Open Food Facts. Optional photo analysis sends your chosen image directly to OpenAI after an explicit Analyze action. Your API key and photo are never written into local storage or backups.</p>",
+  );
+window.addEventListener("storage", (e) => {
+  if (e.key === "nutrak.v2" || e.key === "nutrak.entries") {
+    externalChangeWarning =
+      "Another tab updated the saved journal. This tab has kept its current records. Export any changes here, then reload to read the latest saved journal.";
+    notice();
+  }
+});
+window.addEventListener("hashchange", route);
+render();
+route();
+if ("serviceWorker" in navigator)
+  navigator.serviceWorker.register("./sw.js").catch(() => {});

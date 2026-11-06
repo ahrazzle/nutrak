@@ -1,279 +1,88 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#1a1d21">
-<meta name="description" content="Nutrak — evidence-based nutrition tracking: log food, track macros and micronutrients against DRI standards, offline-first PWA.">
-<title>Nutrak — Nutrition Tracker</title>
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./icons/favicon.ico" sizes="16x16 32x32">
-<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
-<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Nutrak">
-<link rel="stylesheet" href="./src/styles.css">
-</head>
-<body>
-<div id="app">
-
-  <!-- Top bar -->
-  <header class="topbar">
-    <div class="brand">Nutrak<span class="dot">.</span></div>
-    <div class="sync num" id="syncState">offline</div>
-  </header>
-
-  <!-- ============ SCREEN A: PROFILE (wizard) ============ -->
-  <section id="screen-profile" class="screen">
-    <h1>Profile</h1>
-    <p class="lead">Your targets come from age, sex and life-stage only — never rescaled by weight or body-fat. Energy is a range, not a point.</p>
-
-    <div id="profileWizard">
-      <div class="step-indicator">
-        <div class="seg" data-step="0"></div>
-        <div class="seg" data-step="1"></div>
-        <div class="seg" data-step="2"></div>
-      </div>
-
-      <!-- Step 1: age/sex/life-stage -->
-      <div class="wizard-step active" data-wstep="0">
-        <div class="card">
-          <div class="card-title">Step 1 · Age, sex, life-stage</div>
-          <div class="field">
-            <label for="pAge">Age (years)</label>
-            <input type="number" id="pAge" min="1" max="120" value="35" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label>Sex</label>
-            <div class="chips" id="pSexChips">
-              <button type="button" class="chip selected" data-sex="M">Male</button>
-              <button type="button" class="chip" data-sex="F">Female</button>
-            </div>
-          </div>
-          <div class="field">
-            <label>Reproductive state</label>
-            <div class="chips" id="pReproChips">
-              <button type="button" class="chip selected" data-repro="">None</button>
-              <button type="button" class="chip" data-repro="preg">Pregnant</button>
-              <button type="button" class="chip" data-repro="lact">Lactating</button>
-            </div>
-          </div>
-          <button class="btn btn--primary" id="pNext1">Continue →</button>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.openai.com https://world.openfoodfacts.org; worker-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#143f35" />
+    <meta
+      name="description"
+      content="Understand your nutrition, with clear evidence and a private local food journal."
+    />
+    <title>Nutrak · Nutrition, understood</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="./icons/favicon.ico" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="./icons/favicon-32.png"
+    />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Nutrak" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#/today"
+          ><span class="brand-icon">n<span>·</span></span
+          >nutrak</a
+        >
+        <p class="brand-caption">NUTRITION, UNDERSTOOD.</p>
+        <nav aria-label="Main navigation">
+          <a href="#/today" data-nav="today"><span>◉</span>Overview</a
+          ><a href="#/log" data-nav="log"><span>＋</span>Food journal</a
+          ><a href="#/adequacy" data-nav="adequacy"
+            ><span>▥</span>Patterns & evidence</a
+          ><a href="#/profile" data-nav="profile"><span>◎</span>Your profile</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-dot">On your device</div>
+          <p>Your journal stays in this browser. You choose what leaves it.</p>
+          <button class="text-button" id="sourcesButton">
+            Science & sources ↗
+          </button>
         </div>
-      </div>
-
-      <!-- Step 2: height/weight/PAL/bodyfat/goal -->
-      <div class="wizard-step" data-wstep="1">
-        <div class="card">
-          <div class="card-title">Step 2 · Body &amp; activity</div>
-          <div class="field">
-            <label for="pHeight">Height (cm)</label>
-            <input type="number" id="pHeight" min="80" max="250" value="178" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label for="pWeight">Weight (kg)</label>
-            <input type="number" id="pWeight" min="20" max="400" value="78" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label for="pPal">Activity level (PAL)</label>
-            <select id="pPal">
-              <option value="inactive">Inactive (1.00–1.53)</option>
-              <option value="low_active" selected>Low active (1.53–1.68)</option>
-              <option value="active">Active (1.68–1.85)</option>
-              <option value="very_active">Very active (1.85–2.50)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="pGoal">Goal</label>
-            <select id="pGoal">
-              <option value="maintain" selected>Maintain</option>
-              <option value="lose">Lose fat</option>
-              <option value="gain">Gain</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="pBf">Body fat % (optional → body-composition-adjusted energy)</label>
-            <input type="number" id="pBf" min="3" max="60" placeholder="e.g. 25" inputmode="decimal">
-          </div>
-          <div class="field-err" id="pErr2" role="alert" hidden></div>
-          <button class="btn btn--ghost" id="pBack0">← Back</button>
-          <button class="btn btn--primary" id="pNext2">Compute my targets →</button>
-        </div>
-      </div>
-
-      <!-- Step 3: result + standards + save -->
-      <div class="wizard-step" data-wstep="2">
-        <div class="card">
-          <div class="card-title">Your targets (provenance under every number)</div>
-          <div id="pResult"></div>
-          <div class="field" style="margin-top:var(--sp-5)">
-            <label for="pStandards">Standards</label>
-            <select id="pStandards">
-              <option value="NASEM" selected>NASEM (US/Canada DRI)</option>
-              <option value="WHO">WHO</option>
-              <option value="HC">Health Canada</option>
-              <option value="EFSA">EFSA</option>
-            </select>
-          </div>
-          <button class="btn btn--primary" id="pSave">Save profile</button>
-          <button class="btn btn--ghost" id="pEdit">Edit fields</button>
-        </div>
-      </div>
+      </aside>
+      <main id="main" tabindex="-1">
+        <header class="topbar">
+          <span class="eyebrow">YOUR PERSONAL NUTRITION JOURNAL</span
+          ><button class="subtle" id="privacyButton">◈ Local first</button>
+        </header>
+        <div id="storageNotice" class="notice error" role="alert" hidden></div>
+        <section id="screen-today" class="screen"></section>
+        <section id="screen-log" class="screen" hidden></section>
+        <section id="screen-adequacy" class="screen" hidden></section>
+        <section id="screen-profile" class="screen" hidden></section>
+        <footer>
+          Built for understanding. Estimates are a starting point, not a
+          diagnosis.<button class="text-button" id="footerSources">
+            Read our approach ↗
+          </button>
+        </footer>
+      </main>
     </div>
-
-    <div id="profileSaved" style="display:none"></div>
-  </section>
-
-  <!-- ============ SCREEN B: TODAY ============ -->
-  <section id="screen-today" class="screen">
-    <h1>Today</h1>
-    <p class="lead">Energy as a range against your band — with the gap stated honestly.</p>
-
-    <div class="card" id="todayEnergy"></div>
-    <div class="card" id="todayMacros"></div>
-    <div class="card">
-      <div class="card-title">Adequacy ticker · 7-day rolling (sustained bands only)</div>
-      <div class="adeq-grid" id="todayTicker"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Today's log</div>
-      <div id="todayLog"></div>
-    </div>
-  </section>
-
-  <!-- ============ SCREEN C: LOG ============ -->
-  <section id="screen-log" class="screen">
-    <h1>Add entry</h1>
-    <p class="lead">Log by form today — the photo flow is a working estimate-and-confirm demo, and barcode and free-text are marked previews. Every entry carries a confidence tier — photo is always an estimate you confirm.</p>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="form">Form</div>
-      <div class="tab" data-tab="barcode">Barcode</div>
-      <div class="tab" data-tab="text">Text</div>
-      <div class="tab" data-tab="photo">Photo</div>
-    </div>
-
-    <!-- Form tab -->
-    <div class="tabpane" data-pane="form">
-      <div class="card">
-        <div class="field">
-          <label for="fFood">Food</label>
-          <input type="text" id="fFood" placeholder="e.g. Oatmeal w/ banana">
-        </div>
-        <div class="field">
-          <label for="fKcal">Energy (kcal)</label>
-          <input type="number" id="fKcal" min="0" placeholder="e.g. 312" inputmode="numeric">
-        </div>
-        <div class="field">
-          <label>Confidence</label>
-          <div class="chips" id="fTierChips">
-            <button type="button" class="chip selected" data-tier="weighed">Weighed</button>
-            <button type="button" class="chip" data-tier="form">Form</button>
-            <button type="button" class="chip" data-tier="barcode">Barcode</button>
-          </div>
-        </div>
-        <button class="btn btn--primary" id="fAdd">Add entry</button>
-        <div class="field-err" id="fErr" role="alert" hidden></div>
+    <div id="toast" role="status" hidden></div>
+    <dialog id="infoDialog">
+      <div class="dialog-head">
+        <h2 id="dialogTitle"></h2>
+        <button id="closeDialog" aria-label="Close dialog">✕</button>
       </div>
-    </div>
-
-    <!-- Barcode tab (stub behind tier system) -->
-    <div class="tabpane" data-pane="barcode" style="display:none">
-      <div class="card">
-        <div class="card-title">Barcode (preview — not part of this build)</div>
-        <div class="field">
-          <label for="bCode">UPC / EAN</label>
-          <input type="text" id="bCode" placeholder="e.g. 0 59000 01057 8" inputmode="numeric">
-        </div>
-        <button class="btn btn--primary" id="bLookup">Look up</button>
-        <div class="empty" id="bResult">Additive in a later milestone — spine stubs it behind the tier system.</div>
-      </div>
-    </div>
-
-    <!-- Text tab (stub) -->
-    <div class="tabpane" data-pane="text" style="display:none">
-      <div class="card">
-        <div class="card-title">Free-text parse (preview — not part of this build)</div>
-        <div class="field">
-          <label for="tText">Describe your meal</label>
-          <input type="text" id="tText" placeholder="e.g. grilled chicken salad with olive oil">
-        </div>
-        <button class="btn btn--primary" id="tParse">Parse</button>
-        <div class="empty" id="tResult">Additive in a later milestone — LLM gateway + cache.</div>
-      </div>
-    </div>
-
-    <!-- Photo tab: THE contract — amber estimate, never auto-merged -->
-    <div class="tabpane" data-pane="photo" style="display:none">
-      <div class="card">
-        <div class="card-title">Photo estimate</div>
-        <div class="empty" id="photoDrop">
-          <div class="big">📷</div>
-          <p>Recognition errors run 20–50%. A photo gives you an <b>estimate to confirm</b> — never a silently merged number.</p>
-          <button class="btn btn--ghost" id="pSimulate">Preview the estimate flow (no photo is uploaded)</button>
-        </div>
-        <div id="photoEstimate" style="display:none">
-          <div class="photo-est">
-            <b>Photo · estimate — edit to confirm</b>
-            <p style="margin-top:var(--sp-2);color:var(--tier-photo)">The values below are inferred (amber tier). Nothing is added to your log until you confirm.</p>
-          </div>
-          <div class="field"><label for="phFood">Recognized food</label><input type="text" id="phFood" value="Rice bowl with chicken"></div>
-          <div class="field"><label for="phKcal">Recognized energy (kcal)</label><input type="number" id="phKcal" value="540" inputmode="numeric"></div>
-          <div class="field-err" id="phErr" role="alert" hidden></div>
-          <div style="display:flex;gap:var(--sp-3)">
-            <button class="btn btn--primary" id="phConfirm">Confirm &amp; log</button>
-            <button class="btn btn--ghost" id="phDiscard">Discard</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ SCREEN D: ADEQUACY ============ -->
-  <section id="screen-adequacy" class="screen">
-    <h1>Adequacy</h1>
-    <p class="lead">7/30-day rolling means vs RDA/AI. No single-day flags — the system only speaks when a sustained band holds.</p>
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-3)">
-        <div class="card-title" style="margin-bottom:0">Rolling targets</div>
-        <div class="tabs" style="margin-bottom:0;border-bottom:none;width:auto">
-          <div class="tab active" data-win="7">7d</div>
-          <div class="tab" data-win="30">30d</div>
-        </div>
-      </div>
-      <div id="adeqList"></div>
-      <div class="prov prov--auto" style="margin-top:var(--sp-4)">▲ auto · rolling mean vs RDA/AI · sustained band only</div>
-    </div>
-  </section>
-
-</div>
-
-<!-- Bottom nav -->
-<nav class="bottomnav">
-  <a href="#/today" data-nav="today"><span class="ico">◧</span>Today</a>
-  <a href="#/log" data-nav="log"><span class="ico">＋</span>Log</a>
-  <a href="#/adequacy" data-nav="adequacy"><span class="ico">▤</span>Adequacy</a>
-  <a href="#/profile" data-nav="profile"><span class="ico">◉</span>Profile</a>
-</nav>
-
-<!-- Demo fixture meta — honest review surface (azaraki): generation time +
-     source visible so @user knows exactly which snapshot they're reviewing. -->
-<footer class="appfooter" id="appFooter" hidden>
-  <div class="footnote" id="footnoteText"></div>
-</footer>
-
-<!-- Provenance popover -->
-<div class="pop" id="provPop">
-  <div class="sheet">
-    <h3 id="provTitle">Why this number?</h3>
-    <div class="prov-line" id="provBody"></div>
-    <div class="gloss-def" id="glossDef"></div>
-    <button class="btn btn--ghost close" id="provClose">Close</button>
-  </div>
-</div>
-
-<script src="./src/app.js"></script>
-</body>
+      <div id="dialogBody"></div>
+    </dialog>
+    <script src="./src/reference-data.js"></script>
+    <script src="./src/engine.js"></script>
+    <script src="./src/foods.js"></script>
+    <script src="./src/photo.js"></script>
+    <script src="./src/store.js"></script>
+    <script src="./src/app.js"></script>
+  </body>
 </html>
