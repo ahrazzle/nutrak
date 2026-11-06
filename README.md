@@ -32,6 +32,8 @@ npm run test:browser
 
 The browser suite starts its own temporary HTTP server and uses synthetic data. OpenAI and barcode responses are mocked; it makes no billed requests. Unit suites exercise the actual reference engine, capture adapters, storage and service worker behavior.
 
+The [capability and progress record](docs/PROGRESS.md) preserves the project purpose, contracts, verified progress and next work.
+
 ## Scientific scope
 
 See [the reference model](docs/SCIENCE.md) for equations, units, sources, supported profiles and interpretation rules. This build supports adults 19 and older. Pregnancy/lactation nutrient references are available for supported adult groups; energy calculations are withheld because required stage information is not collected. The app does not diagnose deficiency, prescribe supplements, or automatically set weight-loss targets.
