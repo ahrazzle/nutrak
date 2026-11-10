@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1a1d21">
-<meta name="description" content="Nutrak — evidence-based nutrition tracking: log food, track macros and micronutrients against DRI standards, offline-first PWA.">
-<title>Nutrak — Nutrition Tracker</title>
+<meta name="description" content="Nutrak · evidence-based nutrition tracking: log food, track macros and micronutrients against DRI standards, offline-first PWA.">
+<title>Nutrak · Nutrition Tracker</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icons/favicon.ico" sizes="16x16 32x32">
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
@@ -27,7 +27,7 @@
   <!-- ============ SCREEN A: PROFILE (wizard) ============ -->
   <section id="screen-profile" class="screen">
     <h1>Profile</h1>
-    <p class="lead">Your targets come from age, sex and life-stage only — never rescaled by weight or body-fat. Energy is a range, not a point.</p>
+    <p class="lead">Your targets come from age, sex and life-stage only, never rescaled by weight or body-fat. Energy is a range, not a point.</p>
 
     <div id="profileWizard">
       <div class="step-indicator">
@@ -128,7 +128,7 @@
   <!-- ============ SCREEN B: TODAY ============ -->
   <section id="screen-today" class="screen">
     <h1>Today</h1>
-    <p class="lead">Energy as a range against your band — with the gap stated honestly.</p>
+    <p class="lead">Energy as a range against your band, with the gap stated honestly.</p>
 
     <div class="card" id="todayEnergy"></div>
     <div class="card" id="todayMacros"></div>
@@ -145,7 +145,7 @@
   <!-- ============ SCREEN C: LOG ============ -->
   <section id="screen-log" class="screen">
     <h1>Add entry</h1>
-    <p class="lead">Log by form today — the photo flow is a working estimate-and-confirm demo, and barcode and free-text are marked previews. Every entry carries a confidence tier — photo is always an estimate you confirm.</p>
+    <p class="lead">Log by form today. The photo flow is a working estimate-and-confirm demo, and barcode and free-text are marked previews. Every entry carries a confidence tier; photo is always an estimate you confirm.</p>
 
     <div class="tabs">
       <div class="tab active" data-tab="form">Form</div>
@@ -181,26 +181,26 @@
     <!-- Barcode tab (stub behind tier system) -->
     <div class="tabpane" data-pane="barcode" style="display:none">
       <div class="card">
-        <div class="card-title">Barcode (preview — not part of this build)</div>
+        <div class="card-title">Barcode (preview, not part of this build)</div>
         <div class="field">
           <label for="bCode">UPC / EAN</label>
           <input type="text" id="bCode" placeholder="e.g. 0 59000 01057 8" inputmode="numeric">
         </div>
         <button class="btn btn--primary" id="bLookup">Look up</button>
-        <div class="empty" id="bResult">Additive in a later milestone — spine stubs it behind the tier system.</div>
+        <div class="empty" id="bResult">Additive in a later milestone; spine stubs it behind the tier system.</div>
       </div>
     </div>
 
     <!-- Text tab (stub) -->
     <div class="tabpane" data-pane="text" style="display:none">
       <div class="card">
-        <div class="card-title">Free-text parse (preview — not part of this build)</div>
+        <div class="card-title">Free-text parse (preview, not part of this build)</div>
         <div class="field">
           <label for="tText">Describe your meal</label>
           <input type="text" id="tText" placeholder="e.g. grilled chicken salad with olive oil">
         </div>
         <button class="btn btn--primary" id="tParse">Parse</button>
-        <div class="empty" id="tResult">Additive in a later milestone — LLM gateway + cache.</div>
+        <div class="empty" id="tResult">Additive in a later milestone (LLM gateway + cache).</div>
       </div>
     </div>
 
@@ -210,12 +210,12 @@
         <div class="card-title">Photo estimate</div>
         <div class="empty" id="photoDrop">
           <div class="big">📷</div>
-          <p>Recognition errors run 20–50%. A photo gives you an <b>estimate to confirm</b> — never a silently merged number.</p>
+          <p>Recognition errors run 20–50%. A photo gives you an <b>estimate to confirm</b>, never a silently merged number.</p>
           <button class="btn btn--ghost" id="pSimulate">Preview the estimate flow (no photo is uploaded)</button>
         </div>
         <div id="photoEstimate" style="display:none">
           <div class="photo-est">
-            <b>Photo · estimate — edit to confirm</b>
+            <b>Photo · estimate · edit to confirm</b>
             <p style="margin-top:var(--sp-2);color:var(--tier-photo)">The values below are inferred (amber tier). Nothing is added to your log until you confirm.</p>
           </div>
           <div class="field"><label for="phFood">Recognized food</label><input type="text" id="phFood" value="Rice bowl with chicken"></div>
@@ -233,7 +233,7 @@
   <!-- ============ SCREEN D: ADEQUACY ============ -->
   <section id="screen-adequacy" class="screen">
     <h1>Adequacy</h1>
-    <p class="lead">7/30-day rolling means vs RDA/AI. No single-day flags — the system only speaks when a sustained band holds.</p>
+    <p class="lead">7/30-day rolling means vs RDA/AI. No single-day flags. The system only speaks when a sustained band holds.</p>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-3)">
@@ -258,7 +258,7 @@
   <a href="#/profile" data-nav="profile"><span class="ico">◉</span>Profile</a>
 </nav>
 
-<!-- Demo fixture meta — honest review surface (azaraki): generation time +
+<!-- Demo fixture meta — honest review surface (synthetic fixture): generation time +
      source visible so @user knows exactly which snapshot they're reviewing. -->
 <footer class="appfooter" id="appFooter" hidden>
   <div class="footnote" id="footnoteText"></div>
